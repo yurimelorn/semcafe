@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caça aos Casais 💛</title>
+<style>
+  :root {
+    --bg: #1a1f2b;
+    --card: #232a3a;
+    --accent: #ffd166;
+    --text: #f4f6fb;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+  header { text-align: center; margin-bottom: 12px; }
+  header h1 { font-size: clamp(1.4rem, 4vw, 2.2rem); color: var(--accent); }
+  header p { opacity: .8; font-size: clamp(.85rem, 2.5vw, 1rem); margin-top: 4px; }
+
+  .placar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 10px 0 14px;
+  }
+  .slot {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 2px dashed #4a5570;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    overflow: hidden;
+    transition: transform .3s, border-color .3s;
+  }
+  .slot.achou {
+    border: 2px solid var(--accent);
+    transform: scale(1.08);
+  }
+  .slot img { width: 100%; height: 100%; object-fit: cover; }
+  .contador { text-align: center; font-size: .95rem; opacity: .85; margin-bottom: 10px; }
+
+  .cena-wrap {
+    width: min(1100px, 100%);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    position: relative;
+  }
+  svg#cena { display: block; width: 100%; height: auto; }
+
+  /* hotspots: invisíveis de propósito — nada de cursor pointer pra não entregar */
+  .hotspot { fill: transparent; stroke: none; }
+  .hotspot-grupo { cursor: default; }
+
+  /* ondulação no clique */
+  .ripple {
+    position: absolute;
+    border: 2px solid rgba(255,255,255,.7);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: ripple .6s ease-out forwards;
+  }
+  @keyframes ripple {
+    from { opacity: .9; transform: translate(-50%,-50%) scale(.2); width: 40px; height: 40px; }
+    to   { opacity: 0;  transform: translate(-50%,-50%) scale(1.6); width: 40px; height: 40px; }
+  }
+
+  /* modal de revelação */
+  .modal {
+    position: fixed; inset: 0;
+    background: rgba(10,12,18,.82);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 50;
+    padding: 20px;
+  }
+  .modal.aberto { display: flex; }
+  .cartao {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 22px;
+    text-align: center;
+    max-width: 340px;
+    width: 100%;
+    animation: pop .45s cubic-bezier(.2,1.6,.4,1);
+    border: 2px solid var(--accent);
+  }
+  @keyframes pop {
+    from { transform: scale(.5) rotate(-6deg); opacity: 0; }
+    to   { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  .cartao .moldura {
+    width: 220px; height: 220px;
+    margin: 0 auto 14px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #313b52;
+    display: flex; align-items: center; justify-content: center;
+    border: 3px solid var(--accent);
+  }
+  .cartao .moldura img { width: 100%; height: 100%; object-fit: cover; }
+  .cartao .sem-foto {
+    font-size: 3.2rem;
+    color: var(--accent);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .cartao .sem-foto small { font-size: .7rem; opacity: .7; color: var(--text); padding: 0 12px; }
+  .cartao h2 { color: var(--accent); font-size: 1.5rem; }
+  .cartao p.pista { opacity: .8; font-size: .9rem; margin-top: 4px; }
+  .cartao button {
+    margin-top: 16px;
+    background: var(--accent);
+    color: #1a1f2b;
+    border: none;
+    padding: 10px 26px;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .cartao button:hover { filter: brightness(1.1); }
+
+  /* animação da retroescavadeira (David) */
+  #escavacao {
+    position: fixed; inset: 0;
+    background: rgba(10,12,18,.6);
+    display: none;
+    z-index: 60;
+    overflow: hidden;
+  }
+  #escavacao.rodando { display: block; }
+  #retro {
+    position: absolute;
+    bottom: 8vh;
+    left: 0;
+    width: min(320px, 55vw);
+    animation: dirigir 1.6s ease-out forwards;
+  }
+  @keyframes dirigir {
+    from { transform: translateX(110vw); }
+    to   { transform: translateX(calc(50vw - 50%)); }
+  }
+  #retro .braco { transform-origin: 150px 95px; animation: cavar 1s ease-in-out 1.7s 1; }
+  @keyframes cavar {
+    0%   { transform: rotate(0deg); }
+    45%  { transform: rotate(28deg); }
+    100% { transform: rotate(0deg); }
+  }
+
+  .aviso-erro {
+    position: absolute;
+    background: rgba(0,0,0,.75);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: .8rem;
+    pointer-events: none;
+    transform: translate(-50%, -140%);
+    animation: sumir 1.2s ease-out forwards;
+    white-space: nowrap;
+  }
+  @keyframes sumir {
+    0% { opacity: 0; }
+    15% { opacity: 1; }
+    70% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -220%); }
+  }
+
+  /* confete final */
+  .confete {
+    position: fixed;
+    top: -20px;
+    width: 10px; height: 16px;
+    z-index: 70;
+    animation: cair linear forwards;
+    pointer-events: none;
+  }
+  @keyframes cair {
+    to { transform: translateY(110vh) rotate(720deg); }
+  }
+  .vitoria {
+    position: fixed; inset: 0;
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 65;
+    background: rgba(10,12,18,.85);
+    padding: 20px;
+  }
+  .vitoria.aberto { display: flex; }
+  .vitoria .cartao { max-width: 420px; }
+
+  .acoes { margin-top: 14px; }
+  .acoes button {
+    background: transparent;
+    border: 1px solid #4a5570;
+    color: var(--text);
+    padding: 8px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: .85rem;
+  }
+  .acoes button:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔍 Caça aos Casais</h1>
+  <p>Tem 8 pessoas escondidas nessa cena. Clique nos lugares certos pra encontrar todo mundo!</p>
+</header>
+
+<div class="placar" id="placar"></div>
+<div class="contador" id="contador">0 de 8 encontrados</div>
+
+<div class="cena-wrap" id="cenaWrap">
+<svg id="cena" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8ecdf5"/>
+      <stop offset="1" stop-color="#d8f0fd"/>
+    </linearGradient>
+    <linearGradient id="grama" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7cc45e"/>
+      <stop offset="1" stop-color="#4f9e3d"/>
+    </linearGradient>
+    <radialGradient id="solGrad">
+      <stop offset="0" stop-color="#fff6c9"/>
+      <stop offset="1" stop-color="#ffd93d"/>
+    </radialGradient>
+  </defs>
+
+  <!-- céu e chão -->
+  <rect x="0" y="0" width="1200" height="560" fill="url(#ceu)"/>
+  <rect x="0" y="530" width="1200" height="270" fill="url(#grama)"/>
+
+  <!-- sol -->
+  <circle cx="95" cy="95" r="52" fill="url(#solGrad)"/>
+
+  <!-- nuvens -->
+  <g fill="#ffffff" opacity=".9">
+    <ellipse cx="320" cy="110" rx="60" ry="24"/>
+    <ellipse cx="365" cy="95" rx="45" ry="20"/>
+    <ellipse cx="770" cy="70" rx="55" ry="22"/>
+    <ellipse cx="815" cy="58" rx="40" ry="17"/>
+  </g>
+
+  <!-- ✈️ avião (Andressa) -->
+  <g id="hs-andressa" class="hotspot-grupo">
+    <g id="aviao">
+      <line x1="860" y1="150" x2="975" y2="150" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity=".65" stroke-dasharray="14 12"/>
+      <path d="M995 138 L1078 138 Q1105 140 1112 150 Q1105 160 1078 162 L995 162 Q985 150 995 138 Z" fill="#e9eef5" stroke="#9aa7b8" stroke-width="2"/>
+      <path d="M1002 140 L992 114 L1010 114 L1018 140 Z" fill="#d34e4e"/>
+      <path d="M1045 152 L1020 178 L1043 178 L1065 154 Z" fill="#d34e4e"/>
+      <path d="M1045 148 L1025 126 L1047 126 L1063 146 Z" fill="#d34e4e"/>
+      <path d="M1095 143 Q1106 146 1109 150 Q1106 154 1095 157 Z" fill="#5a7d9c"/>
+      <circle cx="1050" cy="147" r="4" fill="#5a7d9c"/>
+      <circle cx="1066" cy="147" r="4" fill="#5a7d9c"/>
+      <circle cx="1082" cy="147" r="4" fill="#5a7d9c"/>
+    </g>
+    <rect class="hotspot" x="985" y="105" width="135" height="85" data-pessoa="andressa"/>
+  </g>
+
+  <!-- morros de fundo -->
+  <ellipse cx="180" cy="545" rx="330" ry="70" fill="#69b350"/>
+  <ellipse cx="1030" cy="550" rx="380" ry="75" fill="#69b350"/>
+
+  <!-- árvore grande à direita, com galho -->
+  <g>
+    <rect x="1035" y="330" width="34" height="230" rx="10" fill="#7a5230"/>
+    <path d="M1048 400 Q980 385 905 402" stroke="#7a5230" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <circle cx="1052" cy="255" r="85" fill="#3f8a3a"/>
+    <circle cx="985" cy="300" r="62" fill="#4a9c44"/>
+    <circle cx="1120" cy="300" r="60" fill="#4a9c44"/>
+    <circle cx="1052" cy="330" r="55" fill="#57ab50"/>
+  </g>
+
+  <!-- 🐦 passarinho no galho (Sammya) -->
+  <g id="hs-sammya" class="hotspot-grupo">
+    <g id="passarinho">
+      <ellipse cx="915" cy="385" rx="14" ry="10" fill="#e8743e"/>
+      <circle cx="928" cy="376" r="7" fill="#e8743e"/>
+      <path d="M934 375 L942 377 L934 380 Z" fill="#f3c53d"/>
+      <circle cx="930" cy="374" r="1.6" fill="#222"/>
+      <path d="M905 384 Q898 380 900 388 Z" fill="#c85a2a"/>
+      <line x1="911" y1="394" x2="911" y2="401" stroke="#8a5a2a" stroke-width="2"/>
+      <line x1="919" y1="394" x2="919" y2="401" stroke="#8a5a2a" stroke-width="2"/>
+    </g>
+    <circle class="hotspot" cx="918" cy="383" r="24" data-pessoa="sammya"/>
+  </g>
+
+  <!-- árvore pequena à esquerda -->
+  <g>
+    <rect x="60" y="380" width="24" height="170" rx="8" fill="#7a5230"/>
+    <circle cx="72" cy="330" r="62" fill="#3f8a3a"/>
+    <circle cx="35" cy="365" r="42" fill="#4a9c44"/>
+    <circle cx="112" cy="362" r="42" fill="#4a9c44"/>
+  </g>
+
+  <!-- caminho do parque -->
+  <path d="M420 800 Q560 640 600 560 Q640 640 780 800 Z" fill="#d9c9a3"/>
+  <ellipse cx="600" cy="565" rx="90" ry="18" fill="#d9c9a3"/>
+
+  <!-- banco de praça -->
+  <g>
+    <rect x="150" y="560" width="130" height="14" rx="4" fill="#9c6b3f"/>
+    <rect x="150" y="540" width="130" height="10" rx="4" fill="#9c6b3f"/>
+    <rect x="158" y="574" width="10" height="36" fill="#6e4a2a"/>
+    <rect x="262" y="574" width="10" height="36" fill="#6e4a2a"/>
+  </g>
+
+  <!-- poste com câmera -->
+  <g>
+    <rect x="333" y="250" width="14" height="330" rx="4" fill="#5a6270"/>
+    <rect x="318" y="572" width="44" height="14" rx="4" fill="#4a515e"/>
+    <path d="M340 250 Q340 218 385 220" stroke="#5a6270" stroke-width="12" fill="none"/>
+    <ellipse cx="392" cy="224" rx="20" ry="12" fill="#f3c53d" stroke="#5a6270" stroke-width="3"/>
+  </g>
+
+  <!-- 📷 câmera de segurança no poste (Yuri) -->
+  <g id="hs-yuri" class="hotspot-grupo">
+    <g id="camera">
+      <rect x="347" y="292" width="12" height="8" fill="#3a404c"/>
+      <g transform="rotate(18 380 296)">
+        <rect x="356" y="284" width="46" height="22" rx="5" fill="#2e3440"/>
+        <rect x="398" y="287" width="12" height="16" rx="3" fill="#454e5e"/>
+        <circle cx="406" cy="295" r="4" fill="#7fd0ff"/>
+        <circle cx="364" cy="288" r="2.5" fill="#ff5a5a"/>
+      </g>
+    </g>
+    <rect class="hotspot" x="342" y="272" width="80" height="48" data-pessoa="yuri"/>
+  </g>
+
+  <!-- 👔 advogado de costas (cabeça = Luís Gustavo) -->
+  <g id="advogado">
+    <!-- pernas -->
+    <rect x="497" y="620" width="20" height="85" rx="6" fill="#23283a"/>
+    <rect x="527" y="620" width="20" height="85" rx="6" fill="#23283a"/>
+    <path d="M493 700 h30 v12 h-34 Z" fill="#181c28"/>
+    <path d="M523 700 h30 v12 h-34 Z" fill="#181c28"/>
+    <!-- paletó (costas) -->
+    <path d="M480 520 Q522 498 564 520 L570 630 Q522 645 474 630 Z" fill="#2f3650"/>
+    <path d="M522 522 L522 630" stroke="#232941" stroke-width="4"/>
+    <!-- braços -->
+    <path d="M480 528 Q460 570 466 612" stroke="#2f3650" stroke-width="20" fill="none" stroke-linecap="round"/>
+    <path d="M564 528 Q586 570 580 610" stroke="#2f3650" stroke-width="20" fill="none" stroke-linecap="round"/>
+    <circle cx="466" cy="618" r="9" fill="#c98d64"/>
+    <!-- maleta -->
+    <rect x="558" y="608" width="52" height="40" rx="6" fill="#6e4a2a"/>
+    <path d="M574 608 q10 -12 20 0" stroke="#4a3018" stroke-width="5" fill="none"/>
+    <rect x="558" y="624" width="52" height="5" fill="#4a3018"/>
+    <!-- colarinho -->
+    <path d="M504 512 L522 524 L540 512" stroke="#e9eef5" stroke-width="6" fill="none"/>
+    <!-- cabeça de costas (Luís Gustavo) -->
+    <g id="hs-luisgustavo" class="hotspot-grupo">
+      <rect x="512" y="498" width="20" height="18" fill="#c98d64"/>
+      <circle cx="493" cy="484" r="7" fill="#c98d64"/>
+      <circle cx="551" cy="484" r="7" fill="#c98d64"/>
+      <circle cx="522" cy="480" r="30" fill="#3a2a1c"/>
+      <path d="M498 500 Q522 512 546 500 Q540 508 522 508 Q504 508 498 500 Z" fill="#c98d64"/>
+      <circle class="hotspot" cx="522" cy="478" r="36" data-pessoa="luisgustavo"/>
+    </g>
+  </g>
+
+  <!-- 👩 mulher de frente com livro -->
+  <g id="mulher">
+    <!-- pernas -->
+    <rect x="668" y="638" width="16" height="66" rx="6" fill="#c98d64"/>
+    <rect x="694" y="638" width="16" height="66" rx="6" fill="#c98d64"/>
+    <path d="M664 698 h26 v12 h-30 Z" fill="#8c2f4f"/>
+    <path d="M692 698 h26 v12 h-30 Z" fill="#8c2f4f"/>
+    <!-- vestido -->
+    <path d="M660 530 Q688 512 716 530 L738 648 Q688 664 638 648 Z" fill="#c2497a"/>
+    <!-- braço direito (dela) caído -->
+    <path d="M714 540 Q734 574 728 606" stroke="#c98d64" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <!-- cabelo atrás -->
+    <path d="M652 470 Q648 540 664 556 L712 556 Q728 540 724 470 Z" fill="#5a3720"/>
+    <!-- cabeça -->
+    <circle cx="688" cy="478" r="27" fill="#d9a077"/>
+    <!-- cabelo frente -->
+    <path d="M661 472 Q662 444 688 444 Q714 444 715 472 Q712 452 688 452 Q664 452 661 472 Z" fill="#5a3720"/>
+    <!-- olhos -->
+    <circle cx="678" cy="474" r="3" fill="#222"/>
+    <circle cx="698" cy="474" r="3" fill="#222"/>
+    <path d="M672 466 q6 -4 11 0" stroke="#3a2a1c" stroke-width="2" fill="none"/>
+    <path d="M693 466 q6 -4 11 0" stroke="#3a2a1c" stroke-width="2" fill="none"/>
+    <!-- 😁 sorriso com dentes (Álvaro) -->
+    <g id="hs-alvaro" class="hotspot-grupo">
+      <path d="M674 488 Q688 504 702 488 Q699 498 688 498 Q677 498 674 488 Z" fill="#a33d3d"/>
+      <path d="M676 488 Q688 494 700 488 L700 491 Q688 496 676 491 Z" fill="#ffffff"/>
+      <line x1="682" y1="488.5" x2="682" y2="492.5" stroke="#dcdcdc" stroke-width="1"/>
+      <line x1="688" y1="489.5" x2="688" y2="493.5" stroke="#dcdcdc" stroke-width="1"/>
+      <line x1="694" y1="488.5" x2="694" y2="492.5" stroke="#dcdcdc" stroke-width="1"/>
+      <ellipse class="hotspot" cx="688" cy="491" rx="16" ry="9" data-pessoa="alvaro"/>
+    </g>
+    <!-- braço esquerdo segurando o livro -->
+    <path d="M662 540 Q642 566 652 588" stroke="#c98d64" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <!-- 📕 livro (Bianca) -->
+    <g id="hs-bianca" class="hotspot-grupo">
+      <g transform="rotate(-8 650 590)">
+        <rect x="618" y="560" width="62" height="80" rx="4" fill="#2f6db3"/>
+        <rect x="618" y="560" width="10" height="80" fill="#245489"/>
+        <rect x="634" y="574" width="38" height="6" rx="2" fill="#e9eef5"/>
+        <rect x="634" y="586" width="30" height="5" rx="2" fill="#e9eef5" opacity=".8"/>
+        <circle cx="652" cy="614" r="10" fill="#f3c53d"/>
+      </g>
+      <rect class="hotspot" x="608" y="552" width="86" height="98" data-pessoa="bianca"/>
+    </g>
+  </g>
+
+  <!-- canteiro de flores -->
+  <g id="canteiro">
+    <ellipse cx="190" cy="742" rx="170" ry="34" fill="#5aa844"/>
+    <!-- flores comuns -->
+    <g class="flor" transform="translate(85 720)">
+      <line x1="0" y1="0" x2="0" y2="26" stroke="#3d7a2f" stroke-width="3"/>
+      <circle cx="-7" cy="-4" r="6" fill="#f3c53d"/><circle cx="7" cy="-4" r="6" fill="#f3c53d"/>
+      <circle cx="0" cy="-11" r="6" fill="#f3c53d"/><circle cx="0" cy="3" r="6" fill="#f3c53d"/>
+      <circle cx="0" cy="-4" r="5" fill="#e8743e"/>
+    </g>
+    <g class="flor" transform="translate(135 736)">
+      <line x1="0" y1="0" x2="0" y2="22" stroke="#3d7a2f" stroke-width="3"/>
+      <circle cx="-6" cy="-4" r="5" fill="#e9eef5"/><circle cx="6" cy="-4" r="5" fill="#e9eef5"/>
+      <circle cx="0" cy="-10" r="5" fill="#e9eef5"/><circle cx="0" cy="2" r="5" fill="#e9eef5"/>
+      <circle cx="0" cy="-4" r="4" fill="#f3c53d"/>
+    </g>
+    <!-- 🌸 A flor da Duda -->
+    <g id="hs-duda" class="hotspot-grupo">
+      <g class="flor" transform="translate(190 714)">
+        <line x1="0" y1="0" x2="0" y2="30" stroke="#3d7a2f" stroke-width="3"/>
+        <circle cx="-8" cy="-4" r="7" fill="#e77fb3"/><circle cx="8" cy="-4" r="7" fill="#e77fb3"/>
+        <circle cx="0" cy="-12" r="7" fill="#e77fb3"/><circle cx="0" cy="4" r="7" fill="#e77fb3"/>
+        <circle cx="-6" cy="-10" r="7" fill="#e77fb3"/><circle cx="6" cy="-10" r="7" fill="#e77fb3"/>
+        <circle cx="0" cy="-5" r="6" fill="#f3c53d"/>
+      </g>
+      <circle class="hotspot" cx="190" cy="708" r="22" data-pessoa="duda"/>
+    </g>
+    <g class="flor" transform="translate(245 736)">
+      <line x1="0" y1="0" x2="0" y2="22" stroke="#3d7a2f" stroke-width="3"/>
+      <circle cx="-6" cy="-4" r="5" fill="#e9eef5"/><circle cx="6" cy="-4" r="5" fill="#e9eef5"/>
+      <circle cx="0" cy="-10" r="5" fill="#e9eef5"/><circle cx="0" cy="2" r="5" fill="#e9eef5"/>
+      <circle cx="0" cy="-4" r="4" fill="#f3c53d"/>
+    </g>
+    <g class="flor" transform="translate(292 722)">
+      <line x1="0" y1="0" x2="0" y2="24" stroke="#3d7a2f" stroke-width="3"/>
+      <circle cx="-7" cy="-4" r="6" fill="#f3c53d"/><circle cx="7" cy="-4" r="6" fill="#f3c53d"/>
+      <circle cx="0" cy="-11" r="6" fill="#f3c53d"/><circle cx="0" cy="3" r="6" fill="#f3c53d"/>
+      <circle cx="0" cy="-4" r="5" fill="#e8743e"/>
+    </g>
+  </g>
+
+  <!-- 🟤 terra no chão (David) -->
+  <g id="hs-david" class="hotspot-grupo">
+    <g id="terra">
+      <ellipse cx="950" cy="720" rx="150" ry="44" fill="#8a5a2a"/>
+      <ellipse cx="950" cy="716" rx="132" ry="35" fill="#7a4c20"/>
+      <ellipse cx="900" cy="712" rx="18" ry="7" fill="#653d18"/>
+      <ellipse cx="975" cy="726" rx="22" ry="8" fill="#653d18"/>
+      <ellipse cx="1010" cy="708" rx="14" ry="6" fill="#653d18"/>
+      <circle cx="930" cy="730" r="4" fill="#5a3512"/>
+      <circle cx="880" cy="724" r="3" fill="#5a3512"/>
+      <circle cx="1000" cy="722" r="4" fill="#5a3512"/>
+    </g>
+    <ellipse class="hotspot" cx="950" cy="720" rx="158" ry="52" data-pessoa="david"/>
+  </g>
+</svg>
+</div>
+
+<div class="acoes">
+  <button id="btnReiniciar">🔄 Recomeçar o jogo</button>
+</div>
+
+<!-- modal de revelação -->
+<div class="modal" id="modal">
+  <div class="cartao">
+    <div class="moldura" id="moldura"></div>
+    <h2 id="nomePessoa"></h2>
+    <p class="pista" id="pistaPessoa"></p>
+    <button id="btnFechar">Continuar 🔎</button>
+  </div>
+</div>
+
+<!-- animação da retroescavadeira -->
+<div id="escavacao">
+  <svg id="retro" viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+    <g>
+      <rect x="30" y="90" width="130" height="55" rx="10" fill="#f3a712"/>
+      <rect x="55" y="45" width="70" height="55" rx="8" fill="#f3c53d"/>
+      <rect x="65" y="55" width="50" height="32" rx="5" fill="#bfe3f5"/>
+      <circle cx="60" cy="158" r="26" fill="#2e3440"/>
+      <circle cx="60" cy="158" r="13" fill="#7a828f"/>
+      <circle cx="135" cy="158" r="26" fill="#2e3440"/>
+      <circle cx="135" cy="158" r="13" fill="#7a828f"/>
+      <g class="braco">
+        <path d="M150 95 L225 60" stroke="#e08900" stroke-width="16" stroke-linecap="round"/>
+        <path d="M225 60 L280 120" stroke="#e08900" stroke-width="14" stroke-linecap="round"/>
+        <path d="M270 112 q28 4 22 32 q-24 6 -34 -12 Z" fill="#5a6270"/>
+      </g>
+    </g>
+  </svg>
+</div>
+
+<!-- vitória -->
+<div class="vitoria" id="vitoria">
+  <div class="cartao">
+    <h2>🎉 Encontraram todo mundo!</h2>
+    <p class="pista" style="margin-top:10px">Os 4 casais estão completos. Parabéns, detetives! 💛</p>
+    <button id="btnFecharVitoria">Ver a cena de novo</button>
+  </div>
+</div>
+
+<script>
+const PESSOAS = {
+  yuri:        { nome: 'Yuri',         emoji: '📷', pista: 'Estava de olho em tudo pela câmera do poste!' },
+  duda:        { nome: 'Duda',         emoji: '🌸', pista: 'Escondida na flor mais bonita do canteiro.' },
+  alvaro:      { nome: 'Álvaro',       emoji: '😁', pista: 'Brilhando no sorriso dela!' },
+  andressa:    { nome: 'Andressa',     emoji: '✈️', pista: 'Passando voando lá no céu.' },
+  david:       { nome: 'David',        emoji: '🚜', pista: 'Foi preciso uma retroescavadeira pra desenterrar!' },
+  bianca:      { nome: 'Bianca',       emoji: '📘', pista: 'Guardada entre as páginas do livro.' },
+  sammya:      { nome: 'Sammya',       emoji: '🐦', pista: 'Cantando com o passarinho no galho da árvore.' },
+  luisgustavo: { nome: 'Luís Gustavo', emoji: '👔', pista: 'Era ele o advogado o tempo todo!' },
+};
+const FOTO_EXTENSOES = ['jpg', 'jpeg', 'png', 'webp'];
+const ORDEM = ['yuri', 'duda', 'alvaro', 'andressa', 'david', 'bianca', 'sammya', 'luisgustavo'];
+
+let encontrados = new Set(JSON.parse(localStorage.getItem('cacaCasais') || '[]'));
+
+const placar = document.getElementById('placar');
+const contador = document.getElementById('contador');
+const modal = document.getElementById('modal');
+const moldura = document.getElementById('moldura');
+const nomePessoa = document.getElementById('nomePessoa');
+const pistaPessoa = document.getElementById('pistaPessoa');
+const escavacao = document.getElementById('escavacao');
+const vitoria = document.getElementById('vitoria');
+const cenaWrap = document.getElementById('cenaWrap');
+
+function montarFoto(id, alvo, tamanhoGrande) {
+  alvo.innerHTML = '';
+  const p = PESSOAS[id];
+  const img = document.createElement('img');
+  let i = 0;
+  img.onerror = () => {
+    i++;
+    if (i < FOTO_EXTENSOES.length) {
+      img.src = `fotos/${id}.${FOTO_EXTENSOES[i]}`;
+    } else {
+      alvo.innerHTML = tamanhoGrande
+        ? `<div class="sem-foto">${p.emoji}<small>coloque a foto em fotos/${id}.jpg</small></div>`
+        : p.emoji;
+    }
+  };
+  img.src = `fotos/${id}.${FOTO_EXTENSOES[0]}`;
+  img.alt = p.nome;
+  alvo.appendChild(img);
+}
+
+function atualizarPlacar() {
+  placar.innerHTML = '';
+  for (const id of ORDEM) {
+    const slot = document.createElement('div');
+    slot.className = 'slot' + (encontrados.has(id) ? ' achou' : '');
+    slot.title = encontrados.has(id) ? PESSOAS[id].nome : '???';
+    if (encontrados.has(id)) {
+      montarFoto(id, slot, false);
+    } else {
+      slot.textContent = '?';
+    }
+    placar.appendChild(slot);
+  }
+  contador.textContent = `${encontrados.size} de ${ORDEM.length} encontrados`;
+  localStorage.setItem('cacaCasais', JSON.stringify([...encontrados]));
+}
+
+function revelar(id) {
+  const p = PESSOAS[id];
+  montarFoto(id, moldura, true);
+  nomePessoa.textContent = `${p.emoji} ${p.nome}!`;
+  pistaPessoa.textContent = p.pista;
+  modal.classList.add('aberto');
+  encontrados.add(id);
+  atualizarPlacar();
+}
+
+function animarEscavacao(depois) {
+  escavacao.classList.add('rodando');
+  const retro = document.getElementById('retro');
+  retro.style.animation = 'none';
+  void retro.offsetWidth; // reinicia a animação
+  retro.style.animation = '';
+  setTimeout(() => {
+    escavacao.classList.remove('rodando');
+    depois();
+  }, 3000);
+}
+
+function confetes() {
+  const cores = ['#ffd166', '#e77fb3', '#7fd0ff', '#8ce99a', '#e8743e', '#c2497a'];
+  for (let i = 0; i < 90; i++) {
+    const c = document.createElement('div');
+    c.className = 'confete';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = cores[Math.floor(Math.random() * cores.length)];
+    c.style.animationDuration = (2.2 + Math.random() * 2.5) + 's';
+    c.style.animationDelay = (Math.random() * 1.2) + 's';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 6000);
+  }
+}
+
+document.querySelectorAll('.hotspot').forEach(h => {
+  h.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const id = h.dataset.pessoa;
+    if (id === 'david' && !encontrados.has('david')) {
+      animarEscavacao(() => revelar('david'));
+    } else {
+      revelar(id);
+    }
+  });
+});
+
+// clique errado: ondulação + mensagem
+document.getElementById('cena').addEventListener('click', (e) => {
+  const rect = cenaWrap.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  r.style.left = x + 'px';
+  r.style.top = y + 'px';
+  cenaWrap.appendChild(r);
+  setTimeout(() => r.remove(), 700);
+
+  if (Math.random() < 0.35) {
+    const frases = ['Nada aqui... 👀', 'Frio! ❄️', 'Continua procurando!', 'Hmm, não é aqui 🤔'];
+    const a = document.createElement('div');
+    a.className = 'aviso-erro';
+    a.textContent = frases[Math.floor(Math.random() * frases.length)];
+    a.style.left = x + 'px';
+    a.style.top = y + 'px';
+    cenaWrap.appendChild(a);
+    setTimeout(() => a.remove(), 1300);
+  }
+});
+
+document.getElementById('btnFechar').addEventListener('click', () => {
+  modal.classList.remove('aberto');
+  if (encontrados.size === ORDEM.length) {
+    vitoria.classList.add('aberto');
+    confetes();
+  }
+});
+document.getElementById('btnFecharVitoria').addEventListener('click', () => {
+  vitoria.classList.remove('aberto');
+});
+document.getElementById('btnReiniciar').addEventListener('click', () => {
+  encontrados = new Set();
+  atualizarPlacar();
+});
+
+atualizarPlacar();
+</script>
+</body>
+</html>
