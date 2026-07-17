@@ -10,7 +10,7 @@ Coloque aqui as fotos de cada pessoa com **exatamente** estes nomes de arquivo:
 | `andressa.jpg`     | Andressa      | Avião ✈️                        |
 | `david.jpg`        | David         | Terra (retroescavadeira) 🚜     |
 | `bianca.jpg`       | Bianca        | Livro da moça 📖                |
-| `sammya.jpg`       | Sammya        | Passarinho no galho 🐦          |
+| `sammya.jpg`       | Sammya        | Menino do 67 perto da árvore 🕺 |
 | `luisgustavo.jpg`  | Luís Gustavo  | Cabeça do advogado 👨‍💼          |
 
 Enquanto a foto não existir, o jogo mostra a inicial do nome da pessoa no lugar.

@@ -6,19 +6,30 @@ David & Bianca, Sammya & Luís Gustavo.
 ## Como funciona
 
 Uma cena de parque é mostrada: um advogado de costas conversando com uma moça
-que segura um livro. Clicando nos lugares certos, a foto de cada pessoa aparece:
+que segura um livro. Cada pessoa está escondida num lugar da cena, e cada uma
+tem sua própria animação de revelação:
 
-- 📷 **Câmera no poste** → Yuri
-- 🌸 **Uma flor especial (a rosa)** → Duda
-- 😁 **Dente do sorriso da moça** → Álvaro
-- ✈️ **Avião passando no céu** → Andressa
-- 🚜 **Terra no chão** → uma retroescavadeira entra na cena, cava e puxa a foto do David
-- 📖 **Livro da moça** → Bianca
-- 🐦 **Passarinho no galho** → Sammya
-- 👨‍💼 **Cabeça do advogado** → Luís Gustavo
+| Onde clicar | Quem | Animação |
+|---|---|---|
+| 📷 Câmera no poste | Yuri | A tela vira a **visão da câmera** (outro cenário, estilo CCTV) e você precisa clicar nele lá dentro |
+| 🚜 Terra no chão | David | Uma retroescavadeira entra, **cava 3 vezes** e puxa a foto |
+| 👨‍💼 Cabeça do advogado | Luís Gustavo | Ele vira um **Hulk**: rasga o paletó, fica verde e gigante (e continua assim na cena!) |
+| 🌸 Flor rosa | Duda | Uma **abelha** vem coletar o pólen e sai voando com a foto |
+| 📖 Livro da moça | Bianca | O livro abre grande e vai sendo **folheado** até achar a foto |
+| ✈️ Avião no céu | Andressa | O avião **vem na direção da tela** e a foto explode em cima de você |
+| 😁 Dente do sorriso da moça | Álvaro | Um **brilho** estala no sorriso dela |
+| 🕺 Menino do 67 perto da árvore | Sammya | Ele corre pra frente e **dança o SIX SEVEN** |
 
-Há um botão de **💡 dicas** que pisca os pontos clicáveis por 3 segundos, um
-placar com os 8 nomes e uma comemoração com confete quando todos são achados.
+Ao achar alguém aparece: **"🎉 PARABÉNS! VOCÊ ENCONTROU A/O …! FALTAM X
+PESSOAS PARA ENCONTRAR"** com a foto da pessoa. Achou os 8 → confete! 🎊
+
+Extras: placar com os 8 nomes, botão 💡 de dicas (pisca os pontos por 3s) e
+botão de reiniciar.
+
+## Celular / tablet
+
+O jogo é feito para jogar **na horizontal**: se o aparelho estiver em pé,
+aparece uma tela pedindo para girar o celular.
 
 ## Como rodar
 

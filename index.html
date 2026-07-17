@@ -82,8 +82,8 @@
   #palco svg { display: block; width: 100%; height: auto; }
 
   .hotspot { cursor: pointer; }
-  #retro, #foto-puxada { pointer-events: none; }
   .hotspot:hover { filter: brightness(1.15); }
+  #retro, #foto-puxada, #abelha, #livrao, #texto67, #brilho, #texto-hulk { pointer-events: none; }
 
   /* pulso de dica */
   @keyframes pulso {
@@ -112,6 +112,54 @@
   }
   button:hover { border-color: var(--accent); color: var(--accent); }
 
+  /* ============ VISÃO DA CÂMERA (CCTV) ============ */
+  #cctv {
+    position: absolute;
+    inset: 0;
+    display: none;
+    background: #0b1018;
+    z-index: 10;
+    overflow: hidden;
+  }
+  #cctv.aberto { display: block; }
+  #cctv svg { width: 100%; height: 100%; }
+  #cctv::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, transparent 1px 4px);
+    pointer-events: none;
+    animation: tremidaCctv .12s steps(2) infinite;
+  }
+  @keyframes tremidaCctv {
+    0% { opacity: .8; }
+    100% { opacity: 1; }
+  }
+  .cctv-hud {
+    position: absolute;
+    font-family: 'Courier New', monospace;
+    color: #c8f0c8;
+    text-shadow: 0 0 6px rgba(120,255,120,.6);
+    font-size: clamp(.7rem, 2vw, 1rem);
+    pointer-events: none;
+    z-index: 2;
+  }
+  #cctv-rec { top: 10px; left: 14px; }
+  #cctv-rec b { color: #ff5252; animation: pulso 1.2s infinite; }
+  #cctv-hora { top: 10px; right: 52px; }
+  #cctv-label { bottom: 10px; left: 14px; }
+  #cctv-ajuda { bottom: 10px; right: 14px; opacity: .8; }
+  #cctv-fechar {
+    position: absolute;
+    top: 6px; right: 8px;
+    z-index: 3;
+    background: rgba(0,0,0,.5);
+    border-color: #4a5a4a;
+    color: #c8f0c8;
+    padding: 2px 10px;
+    font-size: 1rem;
+  }
+
   /* Modal de revelação */
   #veu {
     position: fixed;
@@ -129,19 +177,38 @@
     from { transform: scale(.5) rotate(-6deg); opacity: 0; }
     to   { transform: scale(1) rotate(0deg); opacity: 1; }
   }
+  @keyframes surgirExplosao {
+    0%   { transform: scale(4.5) rotate(18deg); opacity: 0; }
+    55%  { transform: scale(.85) rotate(-4deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
   #cartao {
     background: var(--card);
     border: 3px solid var(--accent);
     border-radius: 20px;
-    padding: 22px;
+    padding: 20px;
     text-align: center;
-    max-width: 340px;
+    max-width: 360px;
     width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
     animation: surgir .45s cubic-bezier(.34,1.56,.64,1);
   }
+  #cartao.explosao { animation: surgirExplosao .65s cubic-bezier(.34,1.56,.64,1); }
+  #cartao .parabens {
+    color: var(--accent);
+    font-size: 1.4rem;
+    letter-spacing: .05em;
+  }
+  #cartao .msg-encontrou {
+    font-weight: bold;
+    font-size: .95rem;
+    margin: 6px 0 12px;
+  }
   #cartao .moldura {
-    width: 220px; height: 220px;
-    margin: 0 auto 14px;
+    width: min(200px, 34vh);
+    height: min(200px, 34vh);
+    margin: 0 auto 12px;
     border-radius: 16px;
     background: #3a4a63;
     display: flex;
@@ -152,15 +219,19 @@
   }
   #cartao .moldura img { width: 100%; height: 100%; object-fit: cover; }
   #cartao .moldura .inicial {
-    font-size: 4.5rem;
+    font-size: 4rem;
     font-weight: bold;
     color: var(--accent);
   }
-  #cartao h2 { color: var(--accent); font-size: 1.5rem; }
-  #cartao .achado-em { opacity: .75; font-size: .85rem; margin: 6px 0 14px; }
-  #cartao .sem-foto { font-size: .7rem; opacity: .5; margin-bottom: 12px; }
+  #cartao .faltam {
+    font-size: .95rem;
+    color: var(--accent);
+    font-weight: bold;
+    margin-bottom: 12px;
+  }
+  #cartao .sem-foto { font-size: .68rem; opacity: .5; margin-bottom: 10px; }
 
-  /* Confete final */
+  /* Tela final */
   #final {
     position: fixed;
     inset: 0;
@@ -173,15 +244,11 @@
     text-align: center;
   }
   #final.aberto { display: flex; }
-  #final .caixa {
-    animation: surgir .5s cubic-bezier(.34,1.56,.64,1);
-  }
+  #final .caixa { animation: surgir .5s cubic-bezier(.34,1.56,.64,1); }
   #final h2 { font-size: clamp(1.6rem, 6vw, 3rem); color: var(--accent); margin-bottom: 10px; }
   #final p { font-size: 1.1rem; margin-bottom: 20px; }
 
-  @keyframes cair {
-    to { transform: translateY(110vh) rotate(720deg); }
-  }
+  @keyframes cair { to { transform: translateY(110vh) rotate(720deg); } }
   .confete {
     position: fixed;
     top: -20px;
@@ -190,13 +257,68 @@
     z-index: 61;
     pointer-events: none;
   }
+
+  /* flash branco (explosão do avião) */
+  #flash {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 55;
+    transition: opacity .15s;
+  }
+
+  /* ============ CELULAR: SÓ NA HORIZONTAL ============ */
+  #gire {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px;
+    gap: 14px;
+  }
+  #gire .fone {
+    font-size: 4.5rem;
+    display: inline-block;
+    animation: girar 1.6s ease-in-out infinite;
+  }
+  @keyframes girar {
+    0%, 20% { transform: rotate(0); }
+    60%, 100% { transform: rotate(90deg); }
+  }
+  #gire h2 { color: var(--accent); font-size: 1.6rem; }
+  #gire p { opacity: .8; }
+
+  @media (orientation: portrait) and (pointer: coarse) {
+    #gire { display: flex; }
+  }
+
+  /* layout compacto para celular na horizontal (tela baixa) */
+  @media (max-height: 540px) {
+    body { padding: 6px; }
+    header { margin-bottom: 4px; }
+    header h1 { font-size: 1.05rem; display: inline; margin-right: 8px; }
+    header p { display: inline; font-size: .7rem; }
+    #placar { margin-bottom: 6px; gap: 4px; }
+    .chip { font-size: .62rem; padding: 2px 8px 2px 3px; border-width: 1.5px; }
+    .chip .dot { width: 15px; height: 15px; font-size: .5rem; }
+    #botoes { margin-top: 6px; }
+    #botoes button { padding: 4px 12px; font-size: .72rem; }
+    #palco { max-width: min(960px, 124vh); }
+  }
 </style>
 </head>
 <body>
 
 <header>
   <h1>🔍 Caça ao Casal</h1>
-  <p>Clique nos lugares certos da cena para encontrar as 8 pessoas escondidas! · <span id="contagem">0/8</span></p>
+  <p>Clique nos lugares certos para achar as 8 pessoas! · <span id="contagem">0/8</span></p>
 </header>
 
 <div id="placar"></div>
@@ -256,6 +378,38 @@
     <circle cx="168" cy="238" r="44" fill="url(#copaGrad)"/>
   </g>
 
+  <!-- 🕺 MENINO DO 67 perto da árvore — Sammya -->
+  <g id="spot-sammya" class="hotspot" transform="translate(192,354) scale(.55)">
+    <g id="m67">
+      <ellipse cx="0" cy="2" rx="24" ry="5" fill="#000" opacity=".15"/>
+      <!-- pernas -->
+      <rect x="-13" y="-40" width="10" height="40" rx="4" fill="#2c3e50"/>
+      <rect x="3" y="-40" width="10" height="40" rx="4" fill="#2c3e50"/>
+      <rect x="-16" y="-3" width="15" height="8" rx="3" fill="#e8e8e8"/>
+      <rect x="1" y="-3" width="15" height="8" rx="3" fill="#e8e8e8"/>
+      <!-- camisa 67 -->
+      <rect x="-17" y="-78" width="34" height="42" rx="8" fill="#d84343"/>
+      <text x="0" y="-49" text-anchor="middle" font-size="20" font-weight="bold" fill="#fff" font-family="Arial, sans-serif">67</text>
+      <!-- braços -->
+      <g id="m67-braco-esq">
+        <path d="M -16 -72 Q -29 -62 -31 -48" stroke="#d84343" stroke-width="9" fill="none" stroke-linecap="round"/>
+        <circle cx="-32" cy="-45" r="5.5" fill="#e8b48a"/>
+      </g>
+      <g id="m67-braco-dir">
+        <path d="M 16 -72 Q 29 -62 31 -48" stroke="#d84343" stroke-width="9" fill="none" stroke-linecap="round"/>
+        <circle cx="32" cy="-45" r="5.5" fill="#e8b48a"/>
+      </g>
+      <!-- cabeça -->
+      <circle cx="0" cy="-93" r="15" fill="#e8b48a"/>
+      <path d="M -15 -95 A 15 15 0 0 1 15 -95 L 15 -99 Q 0 -112 -15 -99 Z" fill="#2c2018"/>
+      <path d="M -15 -97 A 15 15 0 0 1 15 -97 L 15 -94 L 21 -93 L 21 -97 L 15 -100 A 16 16 0 0 0 -15 -100 Z" fill="#3567c4"/>
+      <circle cx="-5" cy="-91" r="1.8" fill="#222"/>
+      <circle cx="5" cy="-91" r="1.8" fill="#222"/>
+      <path d="M -5 -85 q 5 4 10 0" stroke="#222" stroke-width="1.5" fill="none"/>
+    </g>
+    <circle class="dica-anel" cx="0" cy="-50" r="46"/>
+  </g>
+
   <!-- árvore direita com galho -->
   <g>
     <rect x="835" y="220" width="26" height="130" rx="9" fill="#7a5230"/>
@@ -265,8 +419,8 @@
     <circle cx="905" cy="215" r="46" fill="url(#copaGrad)"/>
   </g>
 
-  <!-- 🐦 PASSARINHO no galho — Sammya -->
-  <g id="spot-sammya" class="hotspot" transform="translate(768,250)">
+  <!-- passarinho decorativo no galho -->
+  <g transform="translate(768,250)">
     <ellipse cx="0" cy="0" rx="13" ry="10" fill="#e2833a"/>
     <circle cx="10" cy="-7" r="7" fill="#e2833a"/>
     <path d="M 15 -8 L 23 -6 L 15 -4 Z" fill="#f2c14e"/>
@@ -275,7 +429,6 @@
     <path d="M -12 2 L -22 6 L -13 8 Z" fill="#c96a28"/>
     <line x1="-2" y1="9" x2="-2" y2="15" stroke="#8a5a20" stroke-width="2"/>
     <line x1="4" y1="9" x2="4" y2="15" stroke="#8a5a20" stroke-width="2"/>
-    <circle class="dica-anel" cx="0" cy="-2" r="30"/>
   </g>
 
   <!-- GRAMA -->
@@ -301,17 +454,35 @@
     <path d="M 0 6 q 0 -26 34 -26" stroke="#4a5568" stroke-width="9" fill="none"/>
     <ellipse cx="38" cy="-20" rx="14" ry="8" fill="#5a6578"/>
     <ellipse cx="38" cy="-16" rx="9" ry="5" fill="#fff3b0"/>
-    <!-- 📷 CÂMERA de segurança — Yuri -->
-    <g id="spot-yuri" class="hotspot" transform="translate(-8,36)">
-      <rect x="-30" y="-8" width="34" height="18" rx="4" fill="#2d3440" transform="rotate(18 -13 1)"/>
-      <circle cx="-32" cy="6" r="6" fill="#1a1f28"/>
-      <circle cx="-32" cy="6" r="3" fill="#6ab0e0"/>
-      <circle cx="-33.5" cy="4.5" r="1" fill="#fff"/>
-      <rect x="2" y="-10" width="6" height="12" rx="2" fill="#2d3440"/>
-      <circle cx="-30" cy="-9" r="2.5" fill="#e05252">
-        <animate attributeName="opacity" values="1;.2;1" dur="1.5s" repeatCount="indefinite"/>
-      </circle>
-      <circle class="dica-anel" cx="-14" cy="0" r="30"/>
+    <!-- 📷 CÂMERA de segurança realista — Yuri -->
+    <g id="spot-yuri" class="hotspot" transform="translate(-6,42)">
+      <!-- suporte no poste -->
+      <rect x="-4" y="-16" width="10" height="12" rx="2" fill="#37404e"/>
+      <path d="M 1 -6 L 1 6" stroke="#37404e" stroke-width="6"/>
+      <circle cx="1" cy="-1" r="3" fill="#2a313c"/>
+      <g transform="rotate(14)">
+        <!-- corpo da câmera -->
+        <rect x="-46" y="-7" width="48" height="22" rx="5" fill="#e3e8ee"/>
+        <rect x="-46" y="-7" width="48" height="8" rx="4" fill="#c6cdd7"/>
+        <rect x="-40" y="17" width="36" height="3" rx="1.5" fill="#aab2be"/>
+        <!-- viseira (capuz) sobre a lente -->
+        <path d="M -44 -9 L -62 -4 L -62 16 L -44 18 Z" fill="#aab2be"/>
+        <path d="M -44 -9 L -62 -4 L -62 2 L -44 -2 Z" fill="#98a1ae"/>
+        <!-- lente -->
+        <circle cx="-54" cy="7" r="7.5" fill="#10151d"/>
+        <circle cx="-54" cy="7" r="4.5" fill="#1e4a72"/>
+        <circle cx="-56" cy="5" r="1.6" fill="#9fd3ff"/>
+        <!-- grades de ventilação -->
+        <rect x="-16" y="0" width="14" height="2.6" rx="1.3" fill="#9aa3b0"/>
+        <rect x="-16" y="5" width="14" height="2.6" rx="1.3" fill="#9aa3b0"/>
+        <rect x="-16" y="10" width="14" height="2.6" rx="1.3" fill="#9aa3b0"/>
+        <!-- LED de gravação -->
+        <circle cx="-36" cy="11" r="2.6" fill="#e33">
+          <animate attributeName="opacity" values="1;.15;1" dur="1.4s" repeatCount="indefinite"/>
+        </circle>
+        <text x="-30" y="-11" font-size="7" fill="#6a7381" font-family="Arial, sans-serif">CAM-03</text>
+      </g>
+      <circle class="dica-anel" cx="-26" cy="8" r="36"/>
     </g>
   </g>
 
@@ -327,88 +498,104 @@
     <circle class="dica-anel" cx="0" cy="-2" r="70"/>
   </g>
 
-  <!-- flores comuns (não clicáveis) -->
+  <!-- flores comuns (decoração) -->
   <g id="flores-comuns"></g>
 
   <!-- 🌸 FLOR especial — Duda -->
   <g id="spot-duda" class="hotspot" transform="translate(645,505)">
-    <line x1="0" y1="6" x2="0" y2="30" stroke="#3e7a30" stroke-width="3"/>
-    <path d="M 0 22 q -12 -2 -14 -12 q 12 0 14 12" fill="#4e9440"/>
-    <g>
-      <circle cx="0" cy="-8" r="6" fill="#e8639a"/>
-      <circle cx="8" cy="-2" r="6" fill="#e8639a"/>
-      <circle cx="5" cy="8" r="6" fill="#e8639a"/>
-      <circle cx="-5" cy="8" r="6" fill="#e8639a"/>
-      <circle cx="-8" cy="-2" r="6" fill="#e8639a"/>
-      <circle cx="0" cy="0" r="5" fill="#ffd95e"/>
+    <g id="flor-duda">
+      <line x1="0" y1="6" x2="0" y2="30" stroke="#3e7a30" stroke-width="3"/>
+      <path d="M 0 22 q -12 -2 -14 -12 q 12 0 14 12" fill="#4e9440"/>
+      <g>
+        <circle cx="0" cy="-8" r="6" fill="#e8639a"/>
+        <circle cx="8" cy="-2" r="6" fill="#e8639a"/>
+        <circle cx="5" cy="8" r="6" fill="#e8639a"/>
+        <circle cx="-5" cy="8" r="6" fill="#e8639a"/>
+        <circle cx="-8" cy="-2" r="6" fill="#e8639a"/>
+        <circle cx="0" cy="0" r="5" fill="#ffd95e"/>
+      </g>
     </g>
     <circle class="dica-anel" cx="0" cy="4" r="26"/>
   </g>
 
   <!-- ============ PERSONAGENS ============ -->
 
-  <!-- 👨‍💼 ADVOGADO de costas -->
-  <g transform="translate(415,330)">
-    <!-- sombra -->
+  <!-- 👨‍💼 ADVOGADO de costas (vira Hulk!) -->
+  <g id="advogado" transform="translate(415,330)">
     <ellipse cx="0" cy="182" rx="46" ry="10" fill="#000" opacity=".15"/>
     <!-- pernas -->
     <rect x="-22" y="100" width="18" height="78" rx="7" fill="#22293a"/>
     <rect x="4" y="100" width="18" height="78" rx="7" fill="#22293a"/>
     <rect x="-24" y="172" width="24" height="10" rx="4" fill="#14181f"/>
     <rect x="2" y="172" width="24" height="10" rx="4" fill="#14181f"/>
-    <!-- paletó (costas) -->
-    <path d="M -32 30 Q -36 20 -24 14 L 24 14 Q 36 20 32 30 L 30 105 L -30 105 Z" fill="#2e3a52"/>
-    <path d="M 0 16 L 0 100" stroke="#22293a" stroke-width="2.5"/>
-    <path d="M -32 34 L -30 88" stroke="#22293a" stroke-width="2" opacity=".6"/>
-    <path d="M 32 34 L 30 88" stroke="#22293a" stroke-width="2" opacity=".6"/>
-    <!-- braço com maleta -->
-    <path d="M -30 34 Q -44 60 -40 92" stroke="#2e3a52" stroke-width="15" fill="none" stroke-linecap="round"/>
-    <rect x="-58" y="92" width="38" height="30" rx="5" fill="#7a4a22"/>
-    <path d="M -46 92 q 7 -10 14 0" stroke="#5e3818" stroke-width="4" fill="none"/>
-    <rect x="-58" y="102" width="38" height="4" fill="#5e3818"/>
-    <!-- braço direito gesticulando -->
-    <path d="M 30 34 Q 48 44 54 28" stroke="#2e3a52" stroke-width="15" fill="none" stroke-linecap="round"/>
-    <circle cx="57" cy="24" r="8" fill="#e8b48a"/>
+
+    <!-- 💪 corpo HULK (escondido embaixo do paletó) -->
+    <g id="hulk-torso" opacity="0">
+      <path d="M -36 30 Q -40 18 -26 12 L 26 12 Q 40 18 36 30 L 33 105 L -33 105 Z" fill="#4aa83c"/>
+      <path d="M -18 38 Q 0 50 18 38" stroke="#3c8830" stroke-width="3" fill="none"/>
+      <path d="M 0 50 L 0 88" stroke="#3c8830" stroke-width="3"/>
+      <path d="M -14 62 h 28" stroke="#3c8830" stroke-width="3"/>
+      <path d="M -12 76 h 24" stroke="#3c8830" stroke-width="3"/>
+      <path d="M -34 32 Q -58 50 -48 86" stroke="#4aa83c" stroke-width="19" fill="none" stroke-linecap="round"/>
+      <path d="M 34 32 Q 58 50 48 86" stroke="#4aa83c" stroke-width="19" fill="none" stroke-linecap="round"/>
+      <circle cx="-48" cy="90" r="11" fill="#4aa83c"/>
+      <circle cx="48" cy="90" r="11" fill="#4aa83c"/>
+    </g>
+
+    <!-- paletó em duas metades (rasga na transformação) -->
+    <g id="paleto-esq">
+      <path d="M -32 30 Q -36 20 -24 14 L 0 14 L 0 105 L -30 105 Z" fill="#2e3a52"/>
+      <path d="M -1 16 L -1 100" stroke="#22293a" stroke-width="2.5"/>
+      <path d="M -32 34 L -30 88" stroke="#22293a" stroke-width="2" opacity=".6"/>
+      <path d="M -30 34 Q -44 60 -40 92" stroke="#2e3a52" stroke-width="15" fill="none" stroke-linecap="round"/>
+      <rect x="-58" y="92" width="38" height="30" rx="5" fill="#7a4a22"/>
+      <path d="M -46 92 q 7 -10 14 0" stroke="#5e3818" stroke-width="4" fill="none"/>
+      <rect x="-58" y="102" width="38" height="4" fill="#5e3818"/>
+    </g>
+    <g id="paleto-dir">
+      <path d="M 0 14 L 24 14 Q 36 20 32 30 L 30 105 L 0 105 Z" fill="#2e3a52"/>
+      <path d="M 32 34 L 30 88" stroke="#22293a" stroke-width="2" opacity=".6"/>
+      <path d="M 30 34 Q 48 44 54 28" stroke="#2e3a52" stroke-width="15" fill="none" stroke-linecap="round"/>
+      <circle cx="57" cy="24" r="8" fill="#e8b48a" class="pele"/>
+    </g>
+
     <!-- 👤 CABEÇA do advogado — Luís Gustavo -->
     <g id="spot-luisgustavo" class="hotspot">
-      <rect x="-12" y="-4" width="24" height="18" rx="8" fill="#e8b48a"/>
-      <circle cx="0" cy="-16" r="21" fill="#e8b48a"/>
+      <rect x="-12" y="-4" width="24" height="18" rx="8" fill="#e8b48a" class="pele"/>
+      <circle cx="0" cy="-16" r="21" fill="#e8b48a" class="pele"/>
       <path d="M -21 -18 A 21 21 0 0 1 21 -18 L 21 -12 Q 10 -22 0 -22 Q -10 -22 -21 -12 Z" fill="#3a2c1e"/>
-      <ellipse cx="-19" cy="-14" rx="4" ry="6" fill="#e8b48a"/>
-      <ellipse cx="19" cy="-14" rx="4" ry="6" fill="#e8b48a"/>
+      <ellipse cx="-19" cy="-14" rx="4" ry="6" fill="#e8b48a" class="pele"/>
+      <ellipse cx="19" cy="-14" rx="4" ry="6" fill="#e8b48a" class="pele"/>
       <circle class="dica-anel" cx="0" cy="-14" r="30"/>
     </g>
   </g>
 
+  <!-- texto do hulk -->
+  <text id="texto-hulk" x="415" y="270" text-anchor="middle" font-size="34" font-weight="bold"
+        fill="#4aa83c" stroke="#1d3d15" stroke-width="1" opacity="0"
+        font-family="Arial Black, Arial, sans-serif">GRRRAAAH!! 💪</text>
+
   <!-- 👩 MULHER com livro (de frente, sorrindo) -->
-  <g transform="translate(555,338)">
+  <g id="mulher" transform="translate(555,338)">
     <ellipse cx="0" cy="176" rx="40" ry="9" fill="#000" opacity=".15"/>
-    <!-- pernas -->
     <rect x="-18" y="108" width="15" height="62" rx="6" fill="#e8b48a"/>
     <rect x="4" y="108" width="15" height="62" rx="6" fill="#e8b48a"/>
     <path d="M -20 166 h 22 l 2 8 h -26 Z" fill="#b8455e"/>
     <path d="M 2 166 h 22 l 2 8 h -26 Z" fill="#b8455e"/>
-    <!-- vestido -->
     <path d="M -22 30 L 22 30 L 34 112 L -34 112 Z" fill="#c9556e"/>
     <path d="M -22 30 Q 0 40 22 30 L 22 52 Q 0 60 -22 52 Z" fill="#b8455e"/>
-    <!-- braço esquerdo (segurando livro) -->
     <path d="M -20 42 Q -38 60 -30 82" stroke="#e8b48a" stroke-width="12" fill="none" stroke-linecap="round"/>
-    <!-- braço direito acenando -->
     <path d="M 20 42 Q 38 52 40 74" stroke="#e8b48a" stroke-width="12" fill="none" stroke-linecap="round"/>
     <circle cx="41" cy="78" r="7" fill="#e8b48a"/>
 
-    <!-- cabeça -->
     <g>
       <rect x="-9" y="10" width="18" height="14" rx="7" fill="#e8b48a"/>
       <circle cx="0" cy="-8" r="22" fill="#e8b48a"/>
-      <!-- cabelo -->
       <path d="M -22 -10 A 22 22 0 0 1 22 -10 L 24 18 Q 18 24 14 16 L 14 -4 Q 0 -16 -14 -4 L -14 16 Q -18 24 -24 18 Z" fill="#5e3820"/>
-      <!-- olhos -->
       <circle cx="-8" cy="-10" r="2.6" fill="#2c2018"/>
       <circle cx="8" cy="-10" r="2.6" fill="#2c2018"/>
       <path d="M -12 -16 q 4 -3 8 -1" stroke="#4a3322" stroke-width="1.6" fill="none"/>
       <path d="M 4 -17 q 4 -2 8 1" stroke="#4a3322" stroke-width="1.6" fill="none"/>
-      <!-- bochechas -->
       <circle cx="-14" cy="-2" r="3.5" fill="#e88a7a" opacity=".5"/>
       <circle cx="14" cy="-2" r="3.5" fill="#e88a7a" opacity=".5"/>
       <!-- 😁 BOCA sorrindo com DENTE — Álvaro -->
@@ -431,18 +618,21 @@
     </g>
   </g>
 
-  <!-- 🚜 RETROESCAVADEIRA (escondida, aparece na animação do David) -->
+  <!-- ✨ brilho do dente (Álvaro) -->
+  <g id="brilho" opacity="0" transform="translate(555,343)">
+    <path id="brilho-estrela" d="M 0 -14 L 3.5 -3.5 L 14 0 L 3.5 3.5 L 0 14 L -3.5 3.5 L -14 0 L -3.5 -3.5 Z" fill="#ffffff"/>
+    <path d="M 0 -7 L 1.8 -1.8 L 7 0 L 1.8 1.8 L 0 7 L -1.8 1.8 L -7 0 L -1.8 -1.8 Z" fill="#fffbe0" transform="translate(10,-8)"/>
+  </g>
+
+  <!-- 🚜 RETROESCAVADEIRA (aparece na animação do David) -->
   <g id="retro" transform="translate(-220,455)" opacity="0">
-    <!-- corpo -->
     <rect x="0" y="18" width="80" height="34" rx="6" fill="#f2a71b"/>
     <rect x="8" y="-10" width="40" height="32" rx="5" fill="#f2a71b"/>
     <rect x="14" y="-4" width="28" height="20" rx="3" fill="#bfe3f2"/>
-    <!-- rodas -->
     <circle cx="18" cy="56" r="16" fill="#2d2d2d"/>
     <circle cx="18" cy="56" r="7" fill="#8a8a8a"/>
     <circle cx="66" cy="54" r="20" fill="#2d2d2d"/>
     <circle cx="66" cy="54" r="9" fill="#8a8a8a"/>
-    <!-- braço da escavadeira -->
     <g id="retro-braco">
       <path d="M 78 24 L 128 -8" stroke="#d88f10" stroke-width="10" stroke-linecap="round"/>
       <path d="M 128 -8 L 158 26" stroke="#d88f10" stroke-width="9" stroke-linecap="round"/>
@@ -456,7 +646,142 @@
     <rect x="-24" y="-32" width="48" height="52" fill="#8aa8c8"/>
     <text x="0" y="-2" text-anchor="middle" font-size="26">📷</text>
   </g>
+
+  <!-- 🐝 ABELHA (animação da Duda) -->
+  <g id="abelha" opacity="0" transform="translate(1020,320)">
+    <g id="abelha-foto" opacity="0" transform="translate(0,22)">
+      <line x1="0" y1="-14" x2="0" y2="0" stroke="#555" stroke-width="1.5"/>
+      <rect x="-14" y="0" width="28" height="34" rx="3" fill="#fff"/>
+      <rect x="-11" y="3" width="22" height="24" fill="#8aa8c8"/>
+      <text x="0" y="20" text-anchor="middle" font-size="13">📷</text>
+    </g>
+    <ellipse id="asa1" cx="-3" cy="-12" rx="7" ry="9" fill="#dcefff" opacity=".85">
+      <animate attributeName="ry" values="9;3;9" dur=".14s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse id="asa2" cx="5" cy="-11" rx="6" ry="7" fill="#eef7ff" opacity=".7">
+      <animate attributeName="ry" values="7;2;7" dur=".14s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="0" cy="0" rx="14" ry="10" fill="#f2c14e"/>
+    <path d="M -6 -9.5 Q -3 0 -6 9.5" stroke="#26221c" stroke-width="4" fill="none"/>
+    <path d="M 2 -10 Q 5 0 2 10" stroke="#26221c" stroke-width="4" fill="none"/>
+    <path d="M -14 0 L -21 -2 L -14 3 Z" fill="#26221c"/>
+    <circle cx="14" cy="-3" r="7" fill="#26221c"/>
+    <circle cx="16" cy="-5" r="1.6" fill="#fff"/>
+    <path d="M 17 -10 q 3 -5 7 -5" stroke="#26221c" stroke-width="1.5" fill="none"/>
+  </g>
+
+  <!-- texto SIX SEVEN -->
+  <g id="texto67" opacity="0" transform="translate(480,300)">
+    <text x="0" y="0" text-anchor="middle" font-size="46" font-weight="bold"
+          fill="#ffb84d" stroke="#7a4a00" stroke-width="1.5"
+          font-family="Arial Black, Arial, sans-serif">SIX SEVEN!</text>
+    <text x="0" y="34" text-anchor="middle" font-size="26" font-family="Arial, sans-serif">6️⃣7️⃣🕺</text>
+  </g>
+
+  <!-- 📖 LIVRO GRANDE (animação da Bianca) -->
+  <g id="livrao" opacity="0">
+    <rect x="0" y="0" width="960" height="600" fill="#0a0e16" opacity=".55"/>
+    <g transform="translate(480,320)">
+      <path d="M -155 -95 Q -78 -115 0 -95 Q 78 -115 155 -95 L 155 92 Q 78 72 0 92 Q -78 72 -155 92 Z" fill="#2d5090"/>
+      <path d="M -145 -88 Q -72 -106 0 -88 L 0 84 Q -72 66 -145 84 Z" fill="#efe8d2"/>
+      <path d="M 145 -88 Q 72 -106 0 -88 L 0 84 Q 72 66 145 84 Z" fill="#f5efdc"/>
+      <g stroke="#c8bfa4" stroke-width="2.5">
+        <line x1="-120" y1="-58" x2="-28" y2="-70"/>
+        <line x1="-120" y1="-36" x2="-28" y2="-48"/>
+        <line x1="-120" y1="-14" x2="-28" y2="-26"/>
+        <line x1="28" y1="-70" x2="120" y2="-58"/>
+        <line x1="28" y1="-48" x2="120" y2="-36"/>
+        <line x1="28" y1="-26" x2="120" y2="-14"/>
+      </g>
+      <path id="pag-vira" d="M 145 -88 Q 72 -106 0 -88 L 0 84 Q 72 66 145 84 Z" fill="#fbf6e8" opacity="0"/>
+      <g id="livrao-foto" opacity="0">
+        <rect x="-48" y="-62" width="96" height="116" rx="5" fill="#fff"/>
+        <rect x="-40" y="-54" width="80" height="88" fill="#8aa8c8"/>
+        <text x="0" y="-4" text-anchor="middle" font-size="40">📷</text>
+      </g>
+    </g>
+  </g>
 </svg>
+
+  <!-- ============ VISÃO DA CÂMERA (Yuri) ============ -->
+  <div id="cctv">
+    <svg viewBox="0 0 960 540" preserveAspectRatio="xMidYMid slice">
+      <rect width="960" height="540" fill="#0d1420"/>
+      <circle cx="120" cy="75" r="30" fill="#d8dee8" opacity=".85"/>
+      <circle cx="132" cy="68" r="26" fill="#0d1420"/>
+      <!-- prédios ao fundo -->
+      <g fill="#141b28">
+        <rect x="40" y="140" width="150" height="270"/>
+        <rect x="230" y="180" width="120" height="230"/>
+        <rect x="760" y="120" width="160" height="290"/>
+      </g>
+      <g fill="#2a3a55">
+        <rect x="60" y="160" width="24" height="30"/><rect x="104" y="160" width="24" height="30"/><rect x="148" y="160" width="24" height="30"/>
+        <rect x="60" y="220" width="24" height="30"/><rect x="148" y="220" width="24" height="30"/>
+        <rect x="250" y="200" width="20" height="26"/><rect x="290" y="200" width="20" height="26"/>
+        <rect x="250" y="250" width="20" height="26"/>
+        <rect x="790" y="145" width="22" height="28"/><rect x="830" y="145" width="22" height="28"/><rect x="870" y="145" width="22" height="28"/>
+        <rect x="790" y="200" width="22" height="28"/><rect x="870" y="200" width="22" height="28"/>
+      </g>
+      <rect x="104" y="220" width="24" height="30" fill="#f2c14e" opacity=".8"/>
+      <rect x="290" y="250" width="20" height="26" fill="#f2c14e" opacity=".7"/>
+      <rect x="830" y="200" width="22" height="28" fill="#f2c14e" opacity=".75"/>
+      <!-- chão / rua -->
+      <rect y="410" width="960" height="130" fill="#1a2231"/>
+      <line x1="0" y1="410" x2="960" y2="410" stroke="#2e3a50" stroke-width="3"/>
+      <g stroke="#3a4a66" stroke-width="4" stroke-dasharray="26 22">
+        <line x1="0" y1="478" x2="960" y2="478"/>
+      </g>
+      <!-- poste com luz -->
+      <g>
+        <rect x="586" y="180" width="10" height="240" fill="#2e3a50"/>
+        <path d="M 591 186 q 0 -22 30 -22" stroke="#2e3a50" stroke-width="8" fill="none"/>
+        <ellipse cx="624" cy="162" rx="13" ry="7" fill="#3a4a66"/>
+        <path d="M 600 170 L 700 420 L 540 420 Z" fill="#f8e9a0" opacity=".1"/>
+        <ellipse cx="620" cy="166" rx="8" ry="4" fill="#fff3b0"/>
+      </g>
+      <!-- lixeira -->
+      <g transform="translate(300,388)">
+        <rect x="0" y="0" width="90" height="52" rx="6" fill="#24303f"/>
+        <rect x="-5" y="-10" width="100" height="14" rx="5" fill="#2e3c4e"/>
+        <line x1="24" y1="8" x2="24" y2="44" stroke="#1a222d" stroke-width="4"/>
+        <line x1="48" y1="8" x2="48" y2="44" stroke="#1a222d" stroke-width="4"/>
+        <line x1="70" y1="8" x2="70" y2="44" stroke="#1a222d" stroke-width="4"/>
+      </g>
+      <!-- gato -->
+      <g transform="translate(420,428)" fill="#0a0e14">
+        <ellipse cx="0" cy="0" rx="16" ry="8"/>
+        <circle cx="14" cy="-6" r="6"/>
+        <path d="M 10 -10 L 9 -16 L 13 -11 Z"/>
+        <path d="M 16 -11 L 18 -16 L 20 -10 Z"/>
+        <path d="M -14 -2 q -10 -4 -8 -14" stroke="#0a0e14" stroke-width="3" fill="none"/>
+        <circle cx="16" cy="-7" r="1" fill="#9fd3a0"/>
+      </g>
+      <!-- 🚶 YURI andando embaixo do poste -->
+      <g id="spot-yuri-cctv" class="hotspot" transform="translate(628,336)">
+        <ellipse cx="0" cy="86" rx="26" ry="6" fill="#000" opacity=".3"/>
+        <path d="M -8 40 L -16 82" stroke="#26303f" stroke-width="11" stroke-linecap="round"/>
+        <path d="M 8 40 L 18 82" stroke="#26303f" stroke-width="11" stroke-linecap="round"/>
+        <path d="M -20 78 h -8 l 4 8 h 10 Z" fill="#171e28"/>
+        <path d="M 14 78 h 12 l -2 8 h -12 Z" fill="#171e28"/>
+        <rect x="-17" y="-6" width="34" height="52" rx="12" fill="#3d4a5e"/>
+        <path d="M -15 2 Q -28 18 -22 34" stroke="#3d4a5e" stroke-width="10" fill="none" stroke-linecap="round"/>
+        <path d="M 15 2 Q 28 18 22 34" stroke="#3d4a5e" stroke-width="10" fill="none" stroke-linecap="round"/>
+        <!-- rosto = foto do Yuri (ou placeholder) -->
+        <circle cx="0" cy="-24" r="17" fill="#e8b48a"/>
+        <text x="0" y="-18" text-anchor="middle" font-size="16" font-weight="bold" fill="#7a5230" font-family="Arial, sans-serif">Y</text>
+        <clipPath id="clip-rosto-yuri"><circle cx="0" cy="-24" r="17"/></clipPath>
+        <image id="img-rosto-yuri" x="-17" y="-41" width="34" height="34"
+               clip-path="url(#clip-rosto-yuri)" preserveAspectRatio="xMidYMid slice"/>
+        <circle cx="0" cy="-24" r="26" class="dica-anel" style="animation: pulso 1.6s ease-in-out infinite"/>
+      </g>
+    </svg>
+    <div class="cctv-hud" id="cctv-rec"><b>●</b> REC</div>
+    <div class="cctv-hud" id="cctv-hora"></div>
+    <div class="cctv-hud" id="cctv-label">CAM-03 · SAÍDA DO PARQUE</div>
+    <div class="cctv-hud" id="cctv-ajuda">🔍 tem alguém suspeito aí... clique nele!</div>
+    <button id="cctv-fechar">✕</button>
+  </div>
 </div>
 
 <div id="botoes">
@@ -464,16 +789,19 @@
   <button id="btn-reiniciar">🔄 Reiniciar</button>
 </div>
 
+<div id="flash"></div>
+
 <!-- Modal de revelação -->
 <div id="veu">
   <div id="cartao">
+    <h2 class="parabens">🎉 PARABÉNS!</h2>
+    <p class="msg-encontrou" id="msg-encontrou"></p>
     <div class="moldura" id="moldura"></div>
-    <h2 id="nome-achado"></h2>
-    <p class="achado-em" id="local-achado"></p>
+    <p class="faltam" id="msg-faltam"></p>
     <p class="sem-foto" id="aviso-foto" style="display:none">
       (coloque a foto em <code id="caminho-foto"></code> para ela aparecer aqui)
     </p>
-    <button onclick="fecharCartao()">Continuar procurando ➜</button>
+    <button id="btn-continuar">Continuar procurando ➜</button>
   </div>
 </div>
 
@@ -482,26 +810,34 @@
   <div class="caixa">
     <h2>🎉 Parabéns!</h2>
     <p>Você encontrou os 4 casais: os 8 escondidos foram achados!</p>
-    <button onclick="reiniciar()">Jogar de novo</button>
+    <button onclick="location.reload()">Jogar de novo</button>
   </div>
+</div>
+
+<!-- Aviso: girar o celular -->
+<div id="gire">
+  <span class="fone">📱</span>
+  <h2>Gire o celular!</h2>
+  <p>O Caça ao Casal só funciona com a tela na horizontal 😉</p>
 </div>
 
 <script>
 // ======= CONFIGURAÇÃO DAS PESSOAS =======
 // Para adicionar as fotos, salve os arquivos na pasta fotos/ com estes nomes:
 const PESSOAS = [
-  { id: 'yuri',         nome: 'Yuri',          foto: 'fotos/yuri.jpg',         local: 'Escondido na câmera do poste 📷' },
-  { id: 'david',        nome: 'David',         foto: 'fotos/david.jpg',        local: 'Desenterrado pela retroescavadeira 🚜' },
-  { id: 'luisgustavo',  nome: 'Luís Gustavo',  foto: 'fotos/luisgustavo.jpg',  local: 'Era a cabeça do advogado 👨‍💼' },
-  { id: 'duda',         nome: 'Duda',          foto: 'fotos/duda.jpg',         local: 'Escondida na flor cor-de-rosa 🌸' },
-  { id: 'bianca',       nome: 'Bianca',        foto: 'fotos/bianca.jpg',       local: 'Dentro do livro da moça 📖' },
-  { id: 'andressa',     nome: 'Andressa',      foto: 'fotos/andressa.jpg',     local: 'Voando no avião ✈️' },
-  { id: 'alvaro',       nome: 'Álvaro',        foto: 'fotos/alvaro.jpg',       local: 'No dente do sorriso da moça 😁' },
-  { id: 'sammya',       nome: 'Sammya',        foto: 'fotos/sammya.jpg',       local: 'Cantando com o passarinho 🐦' },
+  { id: 'yuri',        nome: 'Yuri',         artigo: 'O', foto: 'fotos/yuri.jpg' },
+  { id: 'david',       nome: 'David',        artigo: 'O', foto: 'fotos/david.jpg' },
+  { id: 'luisgustavo', nome: 'Luís Gustavo', artigo: 'O', foto: 'fotos/luisgustavo.jpg' },
+  { id: 'duda',        nome: 'Duda',         artigo: 'A', foto: 'fotos/duda.jpg' },
+  { id: 'bianca',      nome: 'Bianca',       artigo: 'A', foto: 'fotos/bianca.jpg' },
+  { id: 'andressa',    nome: 'Andressa',     artigo: 'A', foto: 'fotos/andressa.jpg' },
+  { id: 'alvaro',      nome: 'Álvaro',       artigo: 'O', foto: 'fotos/alvaro.jpg' },
+  { id: 'sammya',      nome: 'Sammya',       artigo: 'A', foto: 'fotos/sammya.jpg' },
 ];
 
 const achados = new Set();
-const placar = document.getElementById('placar');
+let ocupado = false; // trava cliques durante animações
+const $ = id => document.getElementById(id);
 
 // monta o placar
 PESSOAS.forEach(p => {
@@ -509,11 +845,10 @@ PESSOAS.forEach(p => {
   chip.className = 'chip';
   chip.id = 'chip-' + p.id;
   chip.innerHTML = `<div class="dot">${p.nome[0]}</div><span>${p.nome}</span>`;
-  placar.appendChild(chip);
+  $('placar').appendChild(chip);
 });
 
-// flores comuns espalhadas (decoração, não clicáveis)
-const floresComuns = document.getElementById('flores-comuns');
+// flores comuns espalhadas (decoração)
 const posicoesFlores = [
   [300, 470], [350, 545], [500, 560], [720, 545], [790, 480],
   [880, 520], [60, 470], [250, 400], [920, 420], [420, 575]
@@ -531,107 +866,92 @@ posicoesFlores.forEach(([x, y], i) => {
     <circle cx="-4" cy="6" r="5" fill="${cor}"/>
     <circle cx="-6" cy="-1" r="5" fill="${cor}"/>
     <circle cx="0" cy="0" r="4" fill="#ffd95e"/>`;
-  floresComuns.appendChild(g);
+  $('flores-comuns').appendChild(g);
 });
 
-// ======= LÓGICA DO JOGO =======
-function atualizarContagem() {
-  document.getElementById('contagem').textContent = achados.size + '/8';
-  if (achados.size === PESSOAS.length) {
-    setTimeout(() => {
-      document.getElementById('final').classList.add('aberto');
-      soltarConfete();
-    }, 600);
-  }
-}
-
+// ======= REVELAÇÃO / PARABÉNS =======
 function revelar(pessoa) {
   if (!achados.has(pessoa.id)) {
     achados.add(pessoa.id);
-    const chip = document.getElementById('chip-' + pessoa.id);
+    const chip = $('chip-' + pessoa.id);
     chip.classList.add('achou');
-    // tenta colocar a foto no chip também
     const img = new Image();
     img.onload = () => { chip.querySelector('.dot').innerHTML = ''; chip.querySelector('.dot').appendChild(img); };
     img.src = pessoa.foto;
   }
+  $('contagem').textContent = achados.size + '/8';
 
-  const moldura = document.getElementById('moldura');
-  const aviso = document.getElementById('aviso-foto');
+  $('msg-encontrou').textContent =
+    `VOCÊ ENCONTROU ${pessoa.artigo} ${pessoa.nome.toUpperCase()}!`;
+
+  const faltam = PESSOAS.length - achados.size;
+  $('msg-faltam').textContent =
+    faltam === 0 ? 'VOCÊ ENCONTROU TODO MUNDO! 🏆' :
+    faltam === 1 ? 'FALTA 1 PESSOA PARA ENCONTRAR' :
+    `FALTAM ${faltam} PESSOAS PARA ENCONTRAR`;
+
+  const moldura = $('moldura');
   moldura.innerHTML = `<span class="inicial">${pessoa.nome[0]}</span>`;
-  aviso.style.display = 'block';
-  document.getElementById('caminho-foto').textContent = pessoa.foto;
-
+  $('aviso-foto').style.display = 'block';
+  $('caminho-foto').textContent = pessoa.foto;
   const img = new Image();
-  img.onload = () => { moldura.innerHTML = ''; moldura.appendChild(img); aviso.style.display = 'none'; };
+  img.onload = () => { moldura.innerHTML = ''; moldura.appendChild(img); $('aviso-foto').style.display = 'none'; };
   img.src = pessoa.foto;
 
-  document.getElementById('nome-achado').textContent = pessoa.nome;
-  document.getElementById('local-achado').textContent = pessoa.local;
-  document.getElementById('veu').classList.add('aberto');
-  atualizarContagem();
+  $('cartao').classList.toggle('explosao', pessoa.id === 'andressa');
+  $('veu').classList.add('aberto');
 }
 
 function fecharCartao() {
-  document.getElementById('veu').classList.remove('aberto');
+  $('veu').classList.remove('aberto');
+  if (achados.size === PESSOAS.length) {
+    $('final').classList.add('aberto');
+    soltarConfete();
+  }
 }
-document.getElementById('veu').addEventListener('click', e => {
-  if (e.target.id === 'veu') fecharCartao();
-});
+$('btn-continuar').addEventListener('click', fecharCartao);
+$('veu').addEventListener('click', e => { if (e.target.id === 'veu') fecharCartao(); });
 
-// liga os hotspots (David tem animação especial)
-PESSOAS.forEach(p => {
-  const el = document.getElementById('spot-' + p.id);
-  if (!el) return;
-  el.addEventListener('click', () => {
-    if (p.id === 'david') animarRetro(p);
-    else revelar(p);
-  });
-});
+// ======= MOTOR DE ANIMAÇÃO =======
+function animate(dur, passo, fim, suave = true) {
+  const inicio = performance.now();
+  function frame(agora) {
+    let t = Math.min((agora - inicio) / dur, 1);
+    const e = suave ? (t < .5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2) : t;
+    passo(e, t);
+    if (t < 1) requestAnimationFrame(frame);
+    else if (fim) fim();
+  }
+  requestAnimationFrame(frame);
+}
 
-// ======= ANIMAÇÃO DA RETROESCAVADEIRA (David) =======
-let animandoRetro = false;
-function animarRetro(pessoa) {
-  if (animandoRetro) return;
-  if (achados.has('david')) { revelar(pessoa); return; }
-  animandoRetro = true;
+// ======= ANIMAÇÕES DE CADA UM =======
 
-  const retro = document.getElementById('retro');
-  const foto = document.getElementById('foto-puxada');
+// 🚜 David: retroescavadeira entra, cava 3x e puxa a foto
+function animDavid(p, done) {
+  const retro = $('retro'), foto = $('foto-puxada');
   retro.setAttribute('opacity', '1');
-
-  // entra dirigindo da esquerda
-  animate(1400, t => {
-    const x = -220 + t * 220; // vai até x=0 (braço alcança a terra em ~x=160)
-    retro.setAttribute('transform', `translate(${x},455)`);
+  animate(1400, e => {
+    retro.setAttribute('transform', `translate(${-220 + e * 220},455)`);
   }, () => {
-    // "cava": balança o braço
     let vezes = 0;
     const cavar = () => {
-      animate(300, t => {
-        const ang = Math.sin(t * Math.PI) * 14;
-        document.getElementById('retro-braco').setAttribute('transform', `rotate(${ang} 78 24)`);
+      animate(320, e => {
+        $('retro-braco').setAttribute('transform', `rotate(${Math.sin(e * Math.PI) * 14} 78 24)`);
       }, () => {
-        vezes++;
-        if (vezes < 3) cavar();
+        if (++vezes < 3) cavar();
         else {
-          // foto sobe da terra
           foto.setAttribute('opacity', '1');
-          animate(900, t => {
-            const y = 520 - t * 110;
-            const rot = Math.sin(t * Math.PI * 2) * 6;
-            foto.setAttribute('transform', `translate(160,${y}) rotate(${rot})`);
-          }, () => {
-            setTimeout(() => {
-              revelar(pessoa);
-              // limpa a cena
-              retro.setAttribute('opacity', '0');
-              foto.setAttribute('opacity', '0');
-              retro.setAttribute('transform', 'translate(-220,455)');
-              foto.setAttribute('transform', 'translate(160,520)');
-              animandoRetro = false;
-            }, 500);
-          });
+          animate(900, e => {
+            foto.setAttribute('transform',
+              `translate(160,${520 - e * 110}) rotate(${Math.sin(e * Math.PI * 2) * 6})`);
+          }, () => setTimeout(() => {
+            retro.setAttribute('opacity', '0');
+            foto.setAttribute('opacity', '0');
+            retro.setAttribute('transform', 'translate(-220,455)');
+            foto.setAttribute('transform', 'translate(160,520)');
+            done();
+          }, 450));
         }
       });
     };
@@ -639,36 +959,228 @@ function animarRetro(pessoa) {
   });
 }
 
-function animate(dur, passo, fim) {
-  const inicio = performance.now();
-  function frame(agora) {
-    const t = Math.min((agora - inicio) / dur, 1);
-    passo(t < .5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2); // easing
-    if (t < 1) requestAnimationFrame(frame);
-    else if (fim) fim();
-  }
-  requestAnimationFrame(frame);
+// 📷 Yuri: troca para a visão da câmera; tem que achar ele lá
+function animYuri(p, done) {
+  const agora = new Date();
+  $('cctv-hora').textContent = agora.toLocaleDateString('pt-BR') + ' ' +
+    agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  $('cctv').classList.add('aberto');
+  ocupado = false; // libera para clicar no Yuri dentro da câmera
+  // o "done" é chamado quando clicarem na figura (ver listener abaixo)
+  animYuri.finalizar = done;
+}
+$('spot-yuri-cctv').addEventListener('click', () => {
+  $('cctv').classList.remove('aberto');
+  if (animYuri.finalizar) { const f = animYuri.finalizar; animYuri.finalizar = null; f(); }
+});
+$('cctv-fechar').addEventListener('click', () => {
+  $('cctv').classList.remove('aberto');
+  animYuri.finalizar = null;
+});
+// rosto do Yuri na câmera: só usa a foto se o arquivo existir
+(() => {
+  const im = new Image();
+  im.onload = () => $('img-rosto-yuri').setAttribute('href', 'fotos/yuri.jpg');
+  im.src = 'fotos/yuri.jpg';
+})();
+
+// 🐝 Duda: abelha vem coletar o pólen e sai com a foto
+function animDuda(p, done) {
+  const abelha = $('abelha'), flor = $('flor-duda');
+  abelha.setAttribute('opacity', '1');
+  const fx = 645, fy = 478; // pairando sobre a flor
+  animate(1400, e => {
+    // curva de (1020,320) até a flor
+    const x = 1020 + (fx - 1020) * e;
+    const y = 320 + (fy - 320) * e + Math.sin(e * Math.PI) * -60;
+    abelha.setAttribute('transform', `translate(${x},${y})`);
+  }, () => {
+    // coletando: balança na flor
+    animate(1000, (e, t) => {
+      abelha.setAttribute('transform',
+        `translate(${fx + Math.sin(t * 20) * 3},${fy + Math.cos(t * 16) * 3})`);
+      flor.setAttribute('transform', `rotate(${Math.sin(t * 24) * 5} 0 20)`);
+    }, () => {
+      flor.setAttribute('transform', '');
+      $('abelha-foto').setAttribute('opacity', '1');
+      animate(1500, e => {
+        const x = fx + (-120 - fx) * e;
+        const y = fy + (200 - fy) * e - Math.sin(e * Math.PI) * 40;
+        abelha.setAttribute('transform', `translate(${x},${y})`);
+      }, () => {
+        abelha.setAttribute('opacity', '0');
+        $('abelha-foto').setAttribute('opacity', '0');
+        abelha.setAttribute('transform', 'translate(1020,320)');
+        done();
+      }, false);
+    });
+  });
 }
 
+// ✈️ Andressa: avião vem na direção da tela e a foto "explode"
+function animAndressa(p, done) {
+  const aviao = $('spot-andressa');
+  aviao.parentNode.appendChild(aviao); // traz para a frente de tudo
+  animate(1300, e => {
+    const s = 1 + e * 7;
+    const x = 430 + (480 - 430) * e;
+    const y = 80 + (300 - 80) * e;
+    aviao.setAttribute('transform', `translate(${x},${y}) rotate(${-6 + 6 * e}) scale(${s})`);
+  }, () => {
+    $('flash').style.opacity = '1';
+    setTimeout(() => {
+      aviao.setAttribute('transform', 'translate(430,80) rotate(-6)');
+      done();
+      setTimeout(() => { $('flash').style.opacity = '0'; }, 150);
+    }, 180);
+  }, false);
+}
+
+// ✨ Álvaro: brilho no sorriso dela
+function animAlvaro(p, done) {
+  const brilho = $('brilho');
+  brilho.setAttribute('opacity', '1');
+  animate(1300, (e, t) => {
+    const s = Math.sin(t * Math.PI) * 1.8;
+    $('brilho-estrela').setAttribute('transform', `rotate(${t * 220}) scale(${s})`);
+  }, () => {
+    brilho.setAttribute('opacity', '0');
+    done();
+  }, false);
+}
+
+// 📖 Bianca: folheando o livro até achar a foto
+function animBianca(p, done) {
+  const livrao = $('livrao'), pag = $('pag-vira');
+  livrao.setAttribute('opacity', '1');
+  let folhas = 0;
+  const folhear = () => {
+    pag.setAttribute('opacity', '1');
+    animate(420, (e, t) => {
+      const sx = Math.cos(t * Math.PI); // 1 → -1 (página virando)
+      pag.setAttribute('transform', `scale(${sx},1)`);
+      pag.setAttribute('fill', sx > 0 ? '#fbf6e8' : '#e8e0c8');
+    }, () => {
+      pag.setAttribute('opacity', '0');
+      pag.setAttribute('transform', '');
+      if (++folhas < 3) folhear();
+      else {
+        const foto = $('livrao-foto');
+        foto.setAttribute('opacity', '1');
+        animate(700, e => {
+          foto.setAttribute('transform', `translate(0,${20 - 60 * e}) scale(${.4 + .6 * e})`);
+        }, () => setTimeout(() => {
+          livrao.setAttribute('opacity', '0');
+          foto.setAttribute('opacity', '0');
+          foto.setAttribute('transform', '');
+          done();
+        }, 500));
+      }
+    }, false);
+  };
+  setTimeout(folhear, 350);
+}
+
+// 💪 Luís Gustavo: vira Hulk rasgando o paletó
+function animLuis(p, done) {
+  const adv = $('advogado');
+  const peles = adv.querySelectorAll('.pele');
+  const corPele = t => t < .35 ? '#e8b48a' : t < .7 ? '#a8c46a' : '#5cb548';
+  // 1) tremedeira
+  animate(600, (e, t) => {
+    adv.setAttribute('transform', `translate(${415 + Math.sin(t * 40) * 4},330)`);
+  }, () => {
+    // 2) cresce, fica verde e rasga o paletó
+    animate(1100, (e, t) => {
+      const s = 1 + .35 * e;
+      adv.setAttribute('transform', `translate(415,${330 - (s - 1) * 182}) scale(${s})`);
+      peles.forEach(el => el.setAttribute('fill', corPele(t)));
+      $('hulk-torso').setAttribute('opacity', Math.min(1, e * 1.6));
+      const k = Math.min(1, Math.max(0, (e - .15) / .6));
+      $('paleto-esq').setAttribute('transform',
+        `translate(${-90 * k},${-40 * k}) rotate(${-65 * k} -16 60)`);
+      $('paleto-esq').setAttribute('opacity', 1 - k);
+      $('paleto-dir').setAttribute('transform',
+        `translate(${90 * k},${-40 * k}) rotate(${65 * k} 16 60)`);
+      $('paleto-dir').setAttribute('opacity', 1 - k);
+    }, () => {
+      // 3) rugido
+      $('texto-hulk').setAttribute('opacity', '1');
+      animate(700, (e, t) => {
+        $('texto-hulk').setAttribute('transform',
+          `translate(0,${-260 * 0}) scale(1)`);
+        $('texto-hulk').setAttribute('font-size', 34 + Math.sin(t * Math.PI) * 8);
+      }, () => {
+        $('texto-hulk').setAttribute('opacity', '0');
+        done(); // ele CONTINUA hulk na cena :)
+      }, false);
+    });
+  }, false);
+}
+
+// 🕺 Sammya: o menino do 67 corre pra frente e dança SIX SEVEN
+function animSammya(p, done) {
+  const boy = $('spot-sammya');
+  boy.parentNode.appendChild(boy); // fica na frente de todo mundo para dançar
+  const bEsq = $('m67-braco-esq'), bDir = $('m67-braco-dir');
+  const texto = $('texto67');
+  // corre para a frente
+  animate(1200, (e, t) => {
+    const x = 192 + (480 - 192) * e;
+    const y = 354 + (560 - 354) * e;
+    const s = .55 + (1.7 - .55) * e;
+    const passo = Math.sin(t * 26) * 6;
+    boy.setAttribute('transform', `translate(${x},${y - Math.abs(passo)}) scale(${s}) rotate(${passo * .6})`);
+  }, () => {
+    // dança 67: braços de balança + pulinho
+    boy.setAttribute('transform', 'translate(480,560) scale(1.7)');
+    texto.setAttribute('opacity', '1');
+    animate(2600, (e, t) => {
+      const ph = t * Math.PI * 2 * 3.2;
+      const sobe = Math.sin(ph);
+      bEsq.setAttribute('transform', `rotate(${100 + 30 * sobe} -16 -72)`);
+      bDir.setAttribute('transform', `rotate(${-100 + 30 * sobe} 16 -72)`);
+      $('m67').setAttribute('transform',
+        `translate(0,${-Math.abs(Math.sin(ph)) * 8}) rotate(${Math.sin(ph) * 7})`);
+      texto.setAttribute('transform',
+        `translate(480,300) scale(${1 + Math.sin(ph) * .12}) rotate(${Math.sin(ph) * 3})`);
+    }, () => {
+      texto.setAttribute('opacity', '0');
+      // volta para a árvore
+      bEsq.setAttribute('transform', '');
+      bDir.setAttribute('transform', '');
+      $('m67').setAttribute('transform', '');
+      boy.setAttribute('transform', 'translate(192,354) scale(.55)');
+      done();
+    }, false);
+  });
+}
+
+// ======= LIGA OS HOTSPOTS =======
+const ANIMACOES = {
+  david: animDavid, yuri: animYuri, duda: animDuda, andressa: animAndressa,
+  alvaro: animAlvaro, bianca: animBianca, luisgustavo: animLuis, sammya: animSammya
+};
+
+PESSOAS.forEach(p => {
+  const el = $('spot-' + p.id);
+  if (!el) return;
+  el.addEventListener('click', () => {
+    if (ocupado || $('veu').classList.contains('aberto')) return;
+    if (achados.has(p.id)) { revelar(p); return; } // já achou: só mostra o cartão
+    ocupado = true;
+    ANIMACOES[p.id](p, () => { ocupado = false; revelar(p); });
+  });
+});
+
 // ======= DICAS =======
-document.getElementById('btn-dica').addEventListener('click', () => {
-  const cena = document.getElementById('cena');
-  cena.classList.add('mostrando-dicas');
-  setTimeout(() => cena.classList.remove('mostrando-dicas'), 3000);
+$('btn-dica').addEventListener('click', () => {
+  $('cena').classList.add('mostrando-dicas');
+  setTimeout(() => $('cena').classList.remove('mostrando-dicas'), 3000);
 });
 
 // ======= REINICIAR =======
-function reiniciar() {
-  achados.clear();
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('achou'));
-  PESSOAS.forEach(p => {
-    const chip = document.getElementById('chip-' + p.id);
-    chip.querySelector('.dot').innerHTML = p.nome[0];
-  });
-  document.getElementById('final').classList.remove('aberto');
-  document.getElementById('contagem').textContent = '0/8';
-}
-document.getElementById('btn-reiniciar').addEventListener('click', reiniciar);
+$('btn-reiniciar').addEventListener('click', () => location.reload());
 
 // ======= CONFETE =======
 function soltarConfete() {
