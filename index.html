@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caça aos Amigos 💛 — Jogo dos 4 Casais</title>
+<style>
+  :root {
+    --bg: #fdf6ec;
+    --ink: #3b3024;
+    --accent: #e0704f;
+    --card: #ffffff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+  header { text-align: center; margin-bottom: 10px; }
+  header h1 { font-size: clamp(1.3rem, 4vw, 2rem); letter-spacing: .5px; }
+  header p { opacity: .75; font-size: clamp(.85rem, 2.5vw, 1rem); margin-top: 4px; }
+
+  /* Chips of found people */
+  #placar {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+    margin: 10px 0 14px;
+  }
+  .chip {
+    padding: 4px 12px; border-radius: 999px; font-size: .8rem; font-weight: 600;
+    background: #e9e0d2; color: #a09480;
+    border: 2px dashed #cfc3ae;
+    transition: all .4s ease;
+  }
+  .chip.achado {
+    background: var(--accent); color: #fff; border: 2px solid var(--accent);
+    transform: scale(1.05);
+  }
+
+  #contador { font-weight: 700; margin-bottom: 10px; font-size: 1rem; }
+  #contador b { color: var(--accent); }
+
+  /* Scene */
+  #palco {
+    width: min(1100px, 100%);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(59,48,36,.18);
+    background: #aee3f7;
+    line-height: 0;
+  }
+  svg { width: 100%; height: auto; display: block; }
+
+  .hotspot { cursor: pointer; }
+  .hotspot:hover { filter: brightness(1.12); }
+  .hotspot:focus, .flor:focus { outline: none; }
+  .hotspot:focus-visible, .flor:focus-visible { outline: 3px dashed #fff; outline-offset: 3px; }
+
+  /* subtle shake for wrong flowers */
+  @keyframes balanca {
+    0%,100% { transform: rotate(0deg); }
+    25% { transform: rotate(-7deg); }
+    75% { transform: rotate(7deg); }
+  }
+  .balancando { animation: balanca .4s ease; transform-box: fill-box; transform-origin: bottom center; }
+
+  /* plane drifting */
+  @keyframes voa {
+    0%   { transform: translateX(0px); }
+    50%  { transform: translateX(-60px); }
+    100% { transform: translateX(0px); }
+  }
+  #aviao { animation: voa 14s ease-in-out infinite; }
+
+  /* butterfly */
+  @keyframes flutua {
+    0%   { transform: translate(0,0) rotate(0deg); }
+    25%  { transform: translate(14px,-16px) rotate(6deg); }
+    50%  { transform: translate(-6px,-26px) rotate(-5deg); }
+    75%  { transform: translate(-16px,-10px) rotate(4deg); }
+    100% { transform: translate(0,0) rotate(0deg); }
+  }
+  #borboleta { animation: flutua 7s ease-in-out infinite; transform-box: fill-box; }
+  @keyframes bate-asa { 0%,100% { transform: scaleX(1);} 50% { transform: scaleX(.25);} }
+  .asa { animation: bate-asa .5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+
+  /* backhoe entrance */
+  #buraco, #retro { pointer-events: none; }
+  #retro { transform: translateX(560px); transition: transform 1.8s cubic-bezier(.25,.8,.35,1); }
+  #retro.chegando { transform: translateX(0); }
+  @keyframes cava {
+    0%   { transform: rotate(0deg); }
+    35%  { transform: rotate(32deg); }
+    65%  { transform: rotate(38deg); }
+    100% { transform: rotate(0deg); }
+  }
+  #retro.cavando #braco-retro {
+    animation: cava 1.2s ease-in-out;
+    transform-box: fill-box; transform-origin: 10% 20%;
+  }
+  @keyframes treme {
+    0%,100% { transform: translate(0,0); }
+    25% { transform: translate(1px,1px); }
+    75% { transform: translate(-1px,0); }
+  }
+  #retro.cavando { animation: treme .18s linear 6; }
+
+  /* Modal */
+  #veu {
+    position: fixed; inset: 0; background: rgba(30,22,12,.72);
+    display: none; align-items: center; justify-content: center;
+    z-index: 50; padding: 20px;
+  }
+  #veu.aberto { display: flex; }
+  #polaroid {
+    background: #fff; padding: 16px 16px 20px; border-radius: 6px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45);
+    text-align: center; max-width: 340px; width: 100%;
+    transform: rotate(-2deg);
+    animation: revela .45s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes revela {
+    from { transform: rotate(-2deg) scale(.4) translateY(80px); opacity: 0; }
+    to   { transform: rotate(-2deg) scale(1) translateY(0); opacity: 1; }
+  }
+  #foto-area {
+    width: 100%; aspect-ratio: 1/1; background: #efe9df;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; border-radius: 3px;
+  }
+  #foto-area img { width: 100%; height: 100%; object-fit: cover; }
+  .foto-vazia { text-align: center; padding: 14px; color: #8d8272; }
+  .foto-vazia .emoji { font-size: 3.4rem; display: block; margin-bottom: 8px; }
+  .foto-vazia code { background:#e5ddcd; padding: 2px 6px; border-radius: 4px; font-size: .8rem; }
+  #nome-achado {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.5rem; margin-top: 14px; color: var(--ink);
+  }
+  #pista-achada { font-size: .85rem; opacity: .65; margin-top: 2px; }
+  #fechar {
+    margin-top: 14px; border: none; background: var(--accent); color: #fff;
+    font-size: .95rem; font-weight: 600; padding: 9px 26px; border-radius: 999px;
+    cursor: pointer;
+  }
+  #fechar:hover { filter: brightness(1.1); }
+
+  /* victory banner */
+  #vitoria {
+    display: none; margin: 16px 0; padding: 14px 22px; border-radius: 14px;
+    background: linear-gradient(120deg, #ffd166, #ef8a5a);
+    color: #4a2c12; font-weight: 700; text-align: center;
+    animation: revela .5s ease;
+  }
+  #vitoria.mostra { display: block; }
+
+  #reiniciar {
+    margin-top: 14px; background: none; border: 2px solid #cfc3ae; color: #8d8272;
+    padding: 7px 18px; border-radius: 999px; cursor: pointer; font-size: .85rem;
+  }
+  #reiniciar:hover { border-color: var(--accent); color: var(--accent); }
+
+  footer { margin: 18px 0 6px; font-size: .78rem; opacity: .55; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔎 Caça aos Amigos no Parque</h1>
+  <p>Oito pessoas estão escondidas nesta cena. Clique nos lugares certos para encontrá-las!</p>
+</header>
+
+<div id="contador">Encontrados: <b id="num-achados">0</b>/8</div>
+<div id="placar"></div>
+<div id="vitoria">🎉 Vocês encontraram todo mundo! Os 4 casais estão completos! 💛</div>
+
+<div id="palco">
+<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cena de um parque com um advogado de costas falando com uma mulher segurando um livro">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8ed4f2"/>
+      <stop offset="1" stop-color="#e6f7ff"/>
+    </linearGradient>
+    <linearGradient id="grama" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fce74"/>
+      <stop offset="1" stop-color="#6cb356"/>
+    </linearGradient>
+    <radialGradient id="copa" cx=".4" cy=".35" r=".9">
+      <stop offset="0" stop-color="#7fbf5e"/>
+      <stop offset="1" stop-color="#4e8f3a"/>
+    </radialGradient>
+  </defs>
+
+  <!-- CÉU -->
+  <rect x="0" y="0" width="1200" height="560" fill="url(#ceu)"/>
+
+  <!-- sol -->
+  <g>
+    <circle cx="95" cy="88" r="46" fill="#ffd95e"/>
+    <circle cx="95" cy="88" r="58" fill="#ffd95e" opacity=".25"/>
+  </g>
+
+  <!-- nuvens -->
+  <g fill="#ffffff" opacity=".92">
+    <g>
+      <ellipse cx="330" cy="105" rx="55" ry="22"/>
+      <ellipse cx="375" cy="92" rx="40" ry="18"/>
+      <ellipse cx="290" cy="95" rx="32" ry="15"/>
+    </g>
+    <g>
+      <ellipse cx="640" cy="65" rx="48" ry="18"/>
+      <ellipse cx="678" cy="55" rx="32" ry="14"/>
+    </g>
+    <g>
+      <ellipse cx="1035" cy="180" rx="58" ry="20"/>
+      <ellipse cx="1080" cy="168" rx="36" ry="15"/>
+    </g>
+  </g>
+
+  <!-- AVIÃO (Andressa) -->
+  <g id="aviao" class="hotspot" data-pessoa="andressa" tabindex="0" aria-label="Avião passando no céu">
+    <title>Um avião passando ao fundo…</title>
+    <g transform="translate(830,105)">
+      <!-- rastro -->
+      <rect x="92" y="8" width="90" height="5" rx="2.5" fill="#fff" opacity=".7"/>
+      <rect x="196" y="8" width="34" height="5" rx="2.5" fill="#fff" opacity=".4"/>
+      <!-- fuselagem -->
+      <ellipse cx="40" cy="10" rx="52" ry="13" fill="#f4f4f4" stroke="#c8ccd4" stroke-width="1.5"/>
+      <path d="M -12 10 Q -20 2 -14 -4 L 2 4 Z" fill="#e0704f"/>
+      <!-- cauda -->
+      <path d="M 74 6 L 92 -14 L 96 -12 L 84 8 Z" fill="#e0704f"/>
+      <!-- asa -->
+      <path d="M 30 12 L 6 34 L 20 36 L 52 14 Z" fill="#d9dde3"/>
+      <path d="M 34 6 L 18 -10 L 30 -12 L 50 4 Z" fill="#e8ebef"/>
+      <!-- janelas -->
+      <circle cx="16" cy="8" r="3" fill="#7fb6d9"/>
+      <circle cx="30" cy="8" r="3" fill="#7fb6d9"/>
+      <circle cx="44" cy="8" r="3" fill="#7fb6d9"/>
+      <circle cx="58" cy="8" r="3" fill="#7fb6d9"/>
+    </g>
+  </g>
+
+  <!-- montanhas suaves ao fundo -->
+  <path d="M0 560 Q 180 470 380 545 Q 520 500 700 550 Q 900 490 1200 555 L 1200 570 L 0 570 Z" fill="#a8d894" opacity=".8"/>
+
+  <!-- GRAMA -->
+  <rect x="0" y="552" width="1200" height="248" fill="url(#grama)"/>
+  <path d="M0 552 Q 300 542 600 552 T 1200 552 L 1200 565 L 0 565 Z" fill="#9ed683"/>
+
+  <!-- árvore esquerda -->
+  <g>
+    <rect x="52" y="420" width="26" height="150" rx="8" fill="#8a5a33"/>
+    <circle cx="66" cy="360" r="78" fill="url(#copa)"/>
+    <circle cx="14" cy="405" r="52" fill="url(#copa)"/>
+    <circle cx="120" cy="400" r="55" fill="url(#copa)"/>
+  </g>
+  <!-- árvore direita -->
+  <g>
+    <rect x="1116" y="400" width="28" height="170" rx="9" fill="#8a5a33"/>
+    <circle cx="1130" cy="335" r="82" fill="url(#copa)"/>
+    <circle cx="1072" cy="390" r="52" fill="url(#copa)"/>
+    <circle cx="1185" cy="385" r="58" fill="url(#copa)"/>
+  </g>
+
+  <!-- banco de praça -->
+  <g transform="translate(255,505)">
+    <rect x="0" y="0" width="120" height="12" rx="4" fill="#a4713f"/>
+    <rect x="0" y="-26" width="120" height="10" rx="4" fill="#a4713f"/>
+    <rect x="0" y="-44" width="120" height="10" rx="4" fill="#a4713f"/>
+    <rect x="8" y="8" width="9" height="46" fill="#7d5026"/>
+    <rect x="103" y="8" width="9" height="46" fill="#7d5026"/>
+  </g>
+
+  <!-- POSTE COM CÂMERA (Yuri) -->
+  <g>
+    <rect x="176" y="215" width="12" height="360" rx="4" fill="#5a616b"/>
+    <path d="M 182 215 Q 182 185 225 185 L 232 185" stroke="#5a616b" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <ellipse cx="238" cy="192" rx="16" ry="10" fill="#454b54"/>
+    <ellipse cx="238" cy="197" rx="11" ry="6" fill="#ffe9a3"/>
+    <rect x="168" y="565" width="28" height="14" rx="4" fill="#454b54"/>
+    <!-- câmera de segurança -->
+    <g id="camera" class="hotspot" data-pessoa="yuri" tabindex="0" aria-label="Câmera de segurança no poste">
+      <title>Uma câmera de vigilância…</title>
+      <rect x="186" y="268" width="8" height="16" fill="#3a4048"/>
+      <g transform="rotate(18 216 268)">
+        <rect x="192" y="256" width="46" height="22" rx="6" fill="#2f353d"/>
+        <rect x="236" y="259" width="10" height="16" rx="3" fill="#22272e"/>
+        <circle cx="243" cy="267" r="5" fill="#7fd4ff"/>
+        <circle cx="243" cy="267" r="2.2" fill="#123"/>
+        <rect x="196" y="250" width="30" height="7" rx="3.5" fill="#3a4048"/>
+        <circle cx="200" cy="262" r="2.4" fill="#ff5b5b"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ADVOGADO DE COSTAS (cabeça = Luís Gustavo) -->
+  <g>
+    <!-- sombra -->
+    <ellipse cx="505" cy="702" rx="72" ry="14" fill="#000" opacity=".12"/>
+    <!-- pernas -->
+    <rect x="478" y="560" width="24" height="120" fill="#23293a"/>
+    <rect x="510" y="560" width="24" height="120" fill="#1d2331"/>
+    <!-- sapatos -->
+    <path d="M 470 680 h 34 v 14 h -42 q -6 -14 8 -14 z" fill="#14171f"/>
+    <path d="M 508 680 h 34 v 14 h -42 q -6 -14 8 -14 z" fill="#14171f"/>
+    <!-- paletó (costas) -->
+    <path d="M 462 420 Q 462 396 490 390 L 522 390 Q 550 396 550 420 L 556 560 L 456 560 Z" fill="#2c3350"/>
+    <path d="M 506 392 L 506 558" stroke="#232a44" stroke-width="3"/>
+    <path d="M 462 425 L 452 470 L 466 545 L 476 540 L 468 468 Z" fill="#2c3350"/>
+    <path d="M 550 425 L 560 470 L 560 505 L 548 505 Z" fill="#2c3350"/>
+    <!-- mão esquerda -->
+    <circle cx="461" cy="551" r="8" fill="#e8b88a"/>
+    <!-- braço direito segurando maleta -->
+    <circle cx="558" cy="510" r="9" fill="#e8b88a"/>
+    <!-- maleta -->
+    <g>
+      <rect x="536" y="518" width="54" height="42" rx="6" fill="#7a4a21"/>
+      <rect x="536" y="533" width="54" height="4" fill="#5e3817"/>
+      <path d="M 554 518 v -8 q 0 -5 5 -5 h 6 q 5 0 5 5 v 8" stroke="#5e3817" stroke-width="4" fill="none"/>
+      <rect x="558" y="534" width="10" height="7" rx="2" fill="#e0b64e"/>
+    </g>
+    <!-- colarinho -->
+    <path d="M 488 392 L 506 400 L 524 392 L 524 384 L 488 384 Z" fill="#f4f4f4"/>
+    <!-- pescoço -->
+    <rect x="498" y="368" width="16" height="20" fill="#e8b88a"/>
+    <!-- CABEÇA (de costas: só cabelo) -->
+    <g id="cabeca-advogado" class="hotspot" data-pessoa="luis-gustavo" tabindex="0" aria-label="Cabeça do advogado">
+      <title>O advogado, visto de costas…</title>
+      <!-- orelhas -->
+      <circle cx="477" cy="348" r="7" fill="#e8b88a"/>
+      <circle cx="535" cy="348" r="7" fill="#e8b88a"/>
+      <!-- de costas: a cabeça é toda cabelo -->
+      <circle cx="506" cy="342" r="30" fill="#3b2a1c"/>
+      <path d="M 484 328 Q 506 316 528 328 M 482 344 Q 506 334 530 344 M 486 358 Q 506 350 526 358" stroke="#2e2015" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- MULHER COM LIVRO (dente = Álvaro, livro = Bianca) -->
+  <g>
+    <ellipse cx="705" cy="700" rx="60" ry="13" fill="#000" opacity=".12"/>
+    <!-- pernas -->
+    <rect x="686" y="592" width="17" height="92" rx="6" fill="#e8b88a"/>
+    <rect x="708" y="592" width="17" height="92" rx="6" fill="#deae80"/>
+    <!-- sapatos -->
+    <ellipse cx="692" cy="688" rx="15" ry="8" fill="#a83a4e"/>
+    <ellipse cx="718" cy="688" rx="15" ry="8" fill="#a83a4e"/>
+    <!-- vestido -->
+    <path d="M 676 430 Q 705 414 734 430 L 752 600 L 658 600 Z" fill="#d9598a"/>
+    <path d="M 676 430 Q 705 448 734 430 L 736 452 Q 705 468 674 452 Z" fill="#c74a7a"/>
+    <!-- braço direito (dela) caído -->
+    <path d="M 732 440 Q 752 480 748 512" stroke="#e8b88a" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <!-- braço esquerdo segurando o livro -->
+    <path d="M 678 442 Q 660 470 668 492" stroke="#e8b88a" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <!-- LIVRO (Bianca) -->
+    <g id="livro" class="hotspot" data-pessoa="bianca" tabindex="0" aria-label="Livro que a mulher está segurando">
+      <title>O livro dela…</title>
+      <g transform="rotate(-8 668 505)">
+        <rect x="632" y="482" width="72" height="50" rx="4" fill="#3567b8"/>
+        <rect x="638" y="487" width="60" height="40" rx="2" fill="#f7f3e8"/>
+        <line x1="668" y1="487" x2="668" y2="527" stroke="#d8d2c2" stroke-width="2"/>
+        <line x1="644" y1="496" x2="662" y2="496" stroke="#b9b2a0" stroke-width="2"/>
+        <line x1="644" y1="504" x2="662" y2="504" stroke="#b9b2a0" stroke-width="2"/>
+        <line x1="644" y1="512" x2="662" y2="512" stroke="#b9b2a0" stroke-width="2"/>
+        <line x1="674" y1="496" x2="692" y2="496" stroke="#b9b2a0" stroke-width="2"/>
+        <line x1="674" y1="504" x2="692" y2="504" stroke="#b9b2a0" stroke-width="2"/>
+        <line x1="674" y1="512" x2="692" y2="512" stroke="#b9b2a0" stroke-width="2"/>
+      </g>
+      <!-- mão sobre o livro -->
+      <circle cx="666" cy="498" r="9" fill="#e8b88a"/>
+    </g>
+    <!-- pescoço e cabeça -->
+    <rect x="697" y="398" width="16" height="22" fill="#e8b88a"/>
+    <circle cx="705" cy="372" r="30" fill="#eec39a"/>
+    <!-- cabelo -->
+    <path d="M 675 368 A 30 30 0 0 1 735 368 Q 742 360 738 344 Q 730 318 705 318 Q 680 318 672 344 Q 668 360 675 368 Z" fill="#5b3a1e"/>
+    <path d="M 675 366 Q 668 400 660 430 Q 674 438 684 428 Q 682 396 682 378 Z" fill="#5b3a1e"/>
+    <path d="M 735 366 Q 742 400 750 430 Q 736 438 726 428 Q 728 396 728 378 Z" fill="#5b3a1e"/>
+    <!-- olhos (olhando para o advogado) -->
+    <circle cx="694" cy="368" r="3.4" fill="#2e2015"/>
+    <circle cx="716" cy="368" r="3.4" fill="#2e2015"/>
+    <path d="M 688 359 q 6 -4 11 -1" stroke="#4a2f18" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M 710 358 q 6 -3 11 1" stroke="#4a2f18" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <!-- bochechas -->
+    <circle cx="686" cy="381" r="4.5" fill="#f0a08a" opacity=".65"/>
+    <circle cx="724" cy="381" r="4.5" fill="#f0a08a" opacity=".65"/>
+    <!-- boca sorrindo com DENTES (Álvaro) -->
+    <g id="dente" class="hotspot" data-pessoa="alvaro" tabindex="0" aria-label="Sorriso da mulher">
+      <title>O sorriso dela…</title>
+      <path d="M 692 388 Q 705 402 718 388 Q 712 398 705 398 Q 698 398 692 388 Z" fill="#b04a4a"/>
+      <path d="M 693 388.5 Q 705 396 717 388.5 L 716 391 Q 705 397 694 391 Z" fill="#ffffff"/>
+      <!-- área de clique aumentada, invisível -->
+      <ellipse cx="705" cy="391" rx="16" ry="10" fill="transparent"/>
+    </g>
+  </g>
+
+  <!-- FLORES (uma delas = Duda) -->
+  <!-- flor comum 1 -->
+  <g class="flor" transform="translate(120,640)">
+    <path d="M0 0 v 26" stroke="#3f7a2e" stroke-width="4"/>
+    <g fill="#f2c14e"><circle cx="-8" cy="-6" r="7"/><circle cx="8" cy="-6" r="7"/><circle cx="0" cy="-13" r="7"/><circle cx="-6" cy="4" r="7"/><circle cx="6" cy="4" r="7"/></g>
+    <circle cx="0" cy="-3" r="5.5" fill="#8a4b12"/>
+  </g>
+  <!-- flor comum 2 -->
+  <g class="flor" transform="translate(390,655)">
+    <path d="M0 0 v 26" stroke="#3f7a2e" stroke-width="4"/>
+    <g fill="#a97fd1"><circle cx="-8" cy="-6" r="7"/><circle cx="8" cy="-6" r="7"/><circle cx="0" cy="-13" r="7"/><circle cx="-6" cy="4" r="7"/><circle cx="6" cy="4" r="7"/></g>
+    <circle cx="0" cy="-3" r="5.5" fill="#f2c14e"/>
+  </g>
+  <!-- FLOR ESPECIAL (Duda) -->
+  <g class="flor" id="flor-especial" data-pessoa="duda" transform="translate(322,668)" tabindex="0" aria-label="Uma flor no gramado">
+    <title>Uma flor qualquer…</title>
+    <path d="M0 0 v 26" stroke="#3f7a2e" stroke-width="4"/>
+    <g fill="#e46a8a"><circle cx="-8" cy="-6" r="7"/><circle cx="8" cy="-6" r="7"/><circle cx="0" cy="-13" r="7"/><circle cx="-6" cy="4" r="7"/><circle cx="6" cy="4" r="7"/></g>
+    <circle cx="0" cy="-3" r="5.5" fill="#f2c14e"/>
+  </g>
+  <!-- flor comum 3 -->
+  <g class="flor" transform="translate(610,662)">
+    <path d="M0 0 v 26" stroke="#3f7a2e" stroke-width="4"/>
+    <g fill="#e46a8a"><circle cx="-8" cy="-6" r="7"/><circle cx="8" cy="-6" r="7"/><circle cx="0" cy="-13" r="7"/><circle cx="-6" cy="4" r="7"/><circle cx="6" cy="4" r="7"/></g>
+    <circle cx="0" cy="-3" r="5.5" fill="#f2c14e"/>
+  </g>
+  <!-- flor comum 4 -->
+  <g class="flor" transform="translate(806,650)">
+    <path d="M0 0 v 26" stroke="#3f7a2e" stroke-width="4"/>
+    <g fill="#f2c14e"><circle cx="-8" cy="-6" r="7"/><circle cx="8" cy="-6" r="7"/><circle cx="0" cy="-13" r="7"/><circle cx="-6" cy="4" r="7"/><circle cx="6" cy="4" r="7"/></g>
+    <circle cx="0" cy="-3" r="5.5" fill="#8a4b12"/>
+  </g>
+  <!-- flor comum 5 -->
+  <g class="flor" transform="translate(1075,640)">
+    <path d="M0 0 v 26" stroke="#3f7a2e" stroke-width="4"/>
+    <g fill="#a97fd1"><circle cx="-8" cy="-6" r="7"/><circle cx="8" cy="-6" r="7"/><circle cx="0" cy="-13" r="7"/><circle cx="-6" cy="4" r="7"/><circle cx="6" cy="4" r="7"/></g>
+    <circle cx="0" cy="-3" r="5.5" fill="#f2c14e"/>
+  </g>
+  <!-- tufos de grama -->
+  <g stroke="#4e9440" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M 210 660 q -3 -14 -8 -18 M 216 660 q 0 -16 2 -20 M 222 660 q 4 -12 9 -15"/>
+    <path d="M 570 630 q -3 -14 -8 -18 M 576 630 q 0 -16 2 -20 M 582 630 q 4 -12 9 -15"/>
+    <path d="M 930 640 q -3 -14 -8 -18 M 936 640 q 0 -16 2 -20 M 942 640 q 4 -12 9 -15"/>
+  </g>
+
+  <!-- BORBOLETA (Sammya) -->
+  <g id="borboleta" class="hotspot" data-pessoa="sammya" tabindex="0" aria-label="Borboleta voando">
+    <title>Uma borboleta…</title>
+    <g transform="translate(420,505)">
+      <ellipse class="asa" cx="-9" cy="-2" rx="11" ry="14" fill="#7ec8e3" stroke="#4a9cc0" stroke-width="1.5" transform="rotate(-20 -9 -2)"/>
+      <ellipse class="asa" cx="9" cy="-2" rx="11" ry="14" fill="#7ec8e3" stroke="#4a9cc0" stroke-width="1.5" transform="rotate(20 9 -2)"/>
+      <ellipse cx="0" cy="0" rx="3.4" ry="11" fill="#333"/>
+      <path d="M -2 -10 q -4 -7 -8 -8 M 2 -10 q 4 -7 8 -8" stroke="#333" stroke-width="1.6" fill="none"/>
+    </g>
+  </g>
+
+  <!-- TERRA (David) -->
+  <g id="terra" class="hotspot" data-pessoa="david" tabindex="0" aria-label="Área de terra no chão">
+    <title>Um pedaço de terra no chão…</title>
+    <ellipse cx="975" cy="726" rx="140" ry="42" fill="#9c6b3c"/>
+    <ellipse cx="975" cy="722" rx="126" ry="34" fill="#8a5a2b"/>
+    <ellipse cx="930" cy="716" rx="16" ry="6" fill="#6f4620"/>
+    <ellipse cx="1010" cy="730" rx="20" ry="7" fill="#6f4620"/>
+    <ellipse cx="965" cy="738" rx="12" ry="5" fill="#a97744"/>
+    <circle cx="1040" cy="714" r="4" fill="#6f4620"/>
+    <circle cx="905" cy="732" r="4" fill="#6f4620"/>
+  </g>
+  <!-- buraco que aparece quando cava -->
+  <ellipse id="buraco" cx="975" cy="722" rx="60" ry="18" fill="#4a2f14" opacity="0"/>
+
+  <!-- RETROESCAVADEIRA (entra em cena para "puxar" o David) -->
+  <g id="retro" aria-hidden="true">
+    <g transform="translate(1010,596)">
+      <!-- braço com caçamba -->
+      <g id="braco-retro">
+        <path d="M 30 20 L -55 48" stroke="#e8a020" stroke-width="14" stroke-linecap="round"/>
+        <path d="M -55 48 L -85 88" stroke="#e8a020" stroke-width="12" stroke-linecap="round"/>
+        <path d="M -85 88 q -22 2 -24 22 q 14 12 30 2 z" fill="#c77f10"/>
+      </g>
+      <!-- corpo -->
+      <rect x="18" y="0" width="96" height="46" rx="8" fill="#f2b430"/>
+      <rect x="66" y="-38" width="52" height="44" rx="6" fill="#f2b430"/>
+      <rect x="74" y="-30" width="36" height="28" rx="4" fill="#bfe3f2"/>
+      <rect x="18" y="30" width="120" height="18" rx="6" fill="#5a616b"/>
+      <!-- rodas -->
+      <circle cx="44" cy="58" r="22" fill="#2f353d"/>
+      <circle cx="44" cy="58" r="10" fill="#8d949e"/>
+      <circle cx="112" cy="58" r="26" fill="#2f353d"/>
+      <circle cx="112" cy="58" r="12" fill="#8d949e"/>
+      <!-- escapamento -->
+      <rect x="122" y="-16" width="7" height="18" fill="#5a616b"/>
+    </g>
+  </g>
+</svg>
+</div>
+
+<button id="reiniciar">↺ Recomeçar o jogo</button>
+
+<footer>Feito com 💛 para os 4 casais — Yuri &amp; Duda · Álvaro &amp; Andressa · David &amp; Bianca · Luís Gustavo &amp; Sammya</footer>
+
+<!-- MODAL DA FOTO -->
+<div id="veu">
+  <div id="polaroid">
+    <div id="foto-area"></div>
+    <div id="nome-achado"></div>
+    <div id="pista-achada"></div>
+    <button id="fechar">Continuar procurando</button>
+  </div>
+</div>
+
+<script>
+const PESSOAS = {
+  "yuri":         { nome: "Yuri",         pista: "Flagrado pela câmera do poste! 📹" },
+  "duda":         { nome: "Duda",         pista: "Escondida numa flor do jardim 🌸" },
+  "alvaro":       { nome: "Álvaro",       pista: "Brilhando no sorriso dela 😁" },
+  "andressa":     { nome: "Andressa",     pista: "Voando alto no avião ✈️" },
+  "david":        { nome: "David",        pista: "A retroescavadeira desenterrou! 🚜" },
+  "bianca":       { nome: "Bianca",       pista: "Entre as páginas do livro 📖" },
+  "sammya":       { nome: "Sammya",       pista: "Voando com a borboleta 🦋" },
+  "luis-gustavo": { nome: "Luís Gustavo", pista: "Era a cara do advogado! ⚖️" }
+};
+const EXTENSOES = ["jpg", "jpeg", "png", "webp"];
+const CHAVE_SALVA = "caca-amigos-achados";
+
+let achados = new Set(JSON.parse(localStorage.getItem(CHAVE_SALVA) || "[]"));
+let animandoRetro = false;
+
+const veu = document.getElementById("veu");
+const fotoArea = document.getElementById("foto-area");
+const nomeEl = document.getElementById("nome-achado");
+const pistaEl = document.getElementById("pista-achada");
+const placar = document.getElementById("placar");
+const numEl = document.getElementById("num-achados");
+const vitoria = document.getElementById("vitoria");
+
+function montaPlacar() {
+  placar.innerHTML = "";
+  for (const [id, p] of Object.entries(PESSOAS)) {
+    const chip = document.createElement("span");
+    chip.className = "chip" + (achados.has(id) ? " achado" : "");
+    chip.textContent = achados.has(id) ? "✓ " + p.nome : "?";
+    placar.appendChild(chip);
+  }
+  numEl.textContent = achados.size;
+  vitoria.classList.toggle("mostra", achados.size === Object.keys(PESSOAS).length);
+}
+
+function carregaFoto(id) {
+  fotoArea.innerHTML = "";
+  const img = document.createElement("img");
+  img.alt = "Foto de " + PESSOAS[id].nome;
+  let tentativa = 0;
+  img.onerror = () => {
+    tentativa++;
+    if (tentativa < EXTENSOES.length) {
+      img.src = "fotos/" + id + "." + EXTENSOES[tentativa];
+    } else {
+      fotoArea.innerHTML =
+        '<div class="foto-vazia"><span class="emoji">📸</span>' +
+        "Foto de <b>" + PESSOAS[id].nome + "</b> ainda não adicionada.<br><br>" +
+        "Coloque o arquivo <code>fotos/" + id + ".jpg</code> no site." +
+        "</div>";
+    }
+  };
+  img.src = "fotos/" + id + "." + EXTENSOES[0];
+  fotoArea.appendChild(img);
+}
+
+function revela(id) {
+  carregaFoto(id);
+  nomeEl.textContent = PESSOAS[id].nome;
+  pistaEl.textContent = PESSOAS[id].pista;
+  veu.classList.add("aberto");
+  achados.add(id);
+  localStorage.setItem(CHAVE_SALVA, JSON.stringify([...achados]));
+  montaPlacar();
+}
+
+function fechaModal() {
+  veu.classList.remove("aberto");
+}
+document.getElementById("fechar").addEventListener("click", fechaModal);
+veu.addEventListener("click", (e) => { if (e.target === veu) fechaModal(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") fechaModal(); });
+
+// animação especial da retroescavadeira para o David
+function cavaTerra() {
+  if (animandoRetro) return;
+  animandoRetro = true;
+  const retro = document.getElementById("retro");
+  const buraco = document.getElementById("buraco");
+  retro.classList.add("chegando");
+  setTimeout(() => {
+    retro.classList.add("cavando");
+    buraco.style.transition = "opacity .6s ease";
+    buraco.style.opacity = "1";
+  }, 1800);
+  setTimeout(() => {
+    revela("david");
+    animandoRetro = false;
+  }, 3100);
+}
+
+// clique nos hotspots
+document.querySelectorAll("[data-pessoa]").forEach((el) => {
+  const acao = () => {
+    const id = el.dataset.pessoa;
+    if (id === "david") { cavaTerra(); } else { revela(id); }
+  };
+  el.addEventListener("click", acao);
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); acao(); }
+  });
+});
+
+// flores "erradas" só balançam
+document.querySelectorAll(".flor:not(#flor-especial)").forEach((flor) => {
+  flor.style.cursor = "pointer";
+  flor.addEventListener("click", () => {
+    flor.classList.remove("balancando");
+    void flor.offsetWidth;
+    flor.classList.add("balancando");
+  });
+});
+document.getElementById("flor-especial").style.cursor = "pointer";
+
+// reiniciar
+document.getElementById("reiniciar").addEventListener("click", () => {
+  achados.clear();
+  localStorage.removeItem(CHAVE_SALVA);
+  const retro = document.getElementById("retro");
+  retro.classList.remove("chegando", "cavando");
+  document.getElementById("buraco").style.opacity = "0";
+  montaPlacar();
+});
+
+montaPlacar();
+</script>
+</body>
+</html>

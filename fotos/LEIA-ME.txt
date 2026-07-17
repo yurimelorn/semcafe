@@ -1,0 +1,13 @@
+Coloque aqui as fotos do pessoal, com exatamente estes nomes de arquivo
+(pode ser .jpg, .jpeg, .png ou .webp):
+
+  yuri.jpg          -> aparece ao clicar na CÂMERA do poste
+  duda.jpg          -> aparece ao clicar na FLOR rosa (a terceira, perto do banco)
+  alvaro.jpg        -> aparece ao clicar no DENTE/sorriso da mulher
+  andressa.jpg      -> aparece ao clicar no AVIÃO no céu
+  david.jpg         -> aparece ao clicar na TERRA (a retroescavadeira desenterra)
+  bianca.jpg        -> aparece ao clicar no LIVRO da mulher
+  sammya.jpg        -> aparece ao clicar na BORBOLETA
+  luis-gustavo.jpg  -> aparece ao clicar na CABEÇA do advogado
+
+Dica: fotos quadradas (ex: 600x600) ficam melhores na moldura polaroid.
