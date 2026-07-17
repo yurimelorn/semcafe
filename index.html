@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O Jogo dos 4 Casais</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+
+  header { text-align: center; margin-bottom: 12px; }
+  header h1 {
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    background: linear-gradient(90deg, #ff6b9d, #ffd166, #6bd5ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header p { color: #aab; font-size: clamp(.8rem, 2.5vw, 1rem); margin-top: 4px; }
+
+  .placar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin: 10px 0 14px;
+    max-width: 900px;
+  }
+  .chip {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: .85rem;
+    color: #99a;
+    transition: all .4s;
+  }
+  .chip.achou {
+    background: linear-gradient(90deg, #ff6b9d33, #ffd16633);
+    border-color: #ffd166;
+    color: #ffd166;
+    font-weight: bold;
+  }
+  #contador { font-weight: bold; color: #fff; }
+
+  .cena-wrap {
+    width: 100%;
+    max-width: 1100px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    line-height: 0;
+  }
+  svg#cena { width: 100%; height: auto; display: block; }
+
+  .hotspot { cursor: default; }
+  .hotspot.achado { pointer-events: none; }
+
+  .marca-achado { pointer-events: none; }
+
+  @keyframes ripple {
+    from { r: 4; opacity: .9; }
+    to   { r: 30; opacity: 0; }
+  }
+  .ripple { animation: ripple .6s ease-out forwards; }
+
+  /* ---------- Modal ---------- */
+  #overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,10,25,.85);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 50;
+    padding: 16px;
+  }
+  #overlay.aberto { display: flex; }
+
+  .card {
+    background: linear-gradient(160deg, #232346, #1a1a35);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 20px;
+    padding: 24px;
+    text-align: center;
+    max-width: 380px;
+    width: 100%;
+    animation: aparecer .35s ease-out;
+    overflow: hidden;
+  }
+  @keyframes aparecer {
+    from { transform: scale(.7); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  #palco-escavadeira { display: none; margin-bottom: -10px; }
+  #palco-escavadeira.ativo { display: block; }
+  @keyframes cavar {
+    0%, 100% { transform: rotate(0deg); }
+    50%      { transform: rotate(28deg); }
+  }
+  .braco-escavadeira {
+    transform-origin: 84px 30px;
+    animation: cavar 1s ease-in-out 2;
+  }
+
+  .foto-wrap {
+    width: 220px; height: 220px;
+    margin: 0 auto 16px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 3px solid #ffd166;
+    background: #111;
+  }
+  .foto-wrap.subindo { animation: subir 1s ease-out .9s backwards; }
+  @keyframes subir {
+    from { transform: translateY(260px); }
+    to   { transform: translateY(0); }
+  }
+  .foto-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+  .foto-placeholder {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #ff6b9d, #6b5bff);
+  }
+  .foto-placeholder .letra { font-size: 4rem; font-weight: 800; }
+  .foto-placeholder small { font-size: .7rem; opacity: .85; padding: 0 10px; }
+
+  .card h2 { font-size: 1.6rem; color: #ffd166; }
+  .card p.msg { color: #ccd; margin: 8px 0 18px; }
+  .card button {
+    background: linear-gradient(90deg, #ff6b9d, #ff9d6b);
+    border: none; color: #fff;
+    font-size: 1rem; font-weight: bold;
+    padding: 10px 30px;
+    border-radius: 25px;
+    cursor: pointer;
+  }
+  .card button:hover { filter: brightness(1.1); }
+
+  /* ---------- Tela final ---------- */
+  #final .casais {
+    display: flex; flex-direction: column; gap: 8px;
+    margin: 14px 0 18px;
+  }
+  #final .casal {
+    background: rgba(255,255,255,.07);
+    border-radius: 12px;
+    padding: 8px;
+    font-size: 1.05rem;
+  }
+  #final .casal span { color: #ffd166; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💘 O Jogo dos 4 Casais 💘</h1>
+  <p>Tem 8 pessoas escondidas nesta cena. Clique nos lugares certos para encontrá-las! — <span id="contador">0/8</span></p>
+</header>
+
+<div class="placar" id="placar"></div>
+
+<div class="cena-wrap">
+<svg id="cena" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7ec8f7"/>
+      <stop offset="1" stop-color="#cfeeff"/>
+    </linearGradient>
+    <linearGradient id="grama" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6fbf5a"/>
+      <stop offset="1" stop-color="#4e9e3d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- céu e sol -->
+  <rect width="1200" height="800" fill="url(#ceu)"/>
+  <circle cx="115" cy="105" r="52" fill="#ffd94d"/>
+  <circle cx="115" cy="105" r="66" fill="#ffd94d" opacity=".3"/>
+
+  <!-- nuvens -->
+  <g fill="#ffffff" opacity=".9">
+    <g>
+      <ellipse cx="330" cy="95" rx="55" ry="24"/>
+      <ellipse cx="375" cy="82" rx="40" ry="20"/>
+      <ellipse cx="290" cy="84" rx="34" ry="17"/>
+    </g>
+    <g>
+      <ellipse cx="640" cy="65" rx="48" ry="20"/>
+      <ellipse cx="682" cy="55" rx="32" ry="15"/>
+    </g>
+    <g>
+      <ellipse cx="1035" cy="85" rx="50" ry="22"/>
+      <ellipse cx="1078" cy="74" rx="34" ry="16"/>
+    </g>
+  </g>
+
+  <!-- avião (Andressa) -->
+  <g id="g-aviao" transform="translate(870,165)">
+    <animateTransform attributeName="transform" type="translate"
+      values="870,165; 870,155; 870,165" dur="5s" repeatCount="indefinite"/>
+    <line x1="-150" y1="0" x2="-70" y2="0" stroke="#fff" stroke-width="5" opacity=".5" stroke-linecap="round"/>
+    <line x1="-190" y1="6" x2="-110" y2="6" stroke="#fff" stroke-width="4" opacity=".3" stroke-linecap="round"/>
+    <ellipse cx="0" cy="0" rx="62" ry="15" fill="#f4f6f8" stroke="#c8d0d8" stroke-width="1.5"/>
+    <path d="M -42,-4 L -70,-30 L -48,-2 Z" fill="#e74c3c"/>
+    <path d="M -50,-4 L -72,-28 L -46,0 L -44,4 Z" fill="#e74c3c"/>
+    <path d="M 8,2 L -26,26 L -4,6 Z" fill="#d5dde5"/>
+    <path d="M 4,-13 L -14,-30 L -10,-12 Z" fill="#d5dde5"/>
+    <circle cx="-18" cy="-3" r="3.4" fill="#5aa9d6"/>
+    <circle cx="-4" cy="-3" r="3.4" fill="#5aa9d6"/>
+    <circle cx="10" cy="-3" r="3.4" fill="#5aa9d6"/>
+    <circle cx="24" cy="-3" r="3.4" fill="#5aa9d6"/>
+    <path d="M 48,-6 Q 62,-4 62,0 Q 62,4 48,6 Z" fill="#e74c3c"/>
+    <rect class="hotspot" data-spot="aviao" x="-80" y="-36" width="160" height="66" fill="transparent"/>
+  </g>
+
+  <!-- chão -->
+  <rect x="0" y="520" width="1200" height="280" fill="url(#grama)"/>
+  <ellipse cx="600" cy="522" rx="700" ry="18" fill="#6fbf5a"/>
+
+  <!-- caminho -->
+  <path d="M 470,800 L 565,535 L 675,535 L 840,800 Z" fill="#e0c9a0"/>
+  <path d="M 470,800 L 565,535 L 675,535 L 840,800 Z" fill="none" stroke="#c9ae82" stroke-width="4" stroke-dasharray="1 18" stroke-linecap="round"/>
+
+  <!-- árvore esquerda -->
+  <g>
+    <rect x="118" y="380" width="26" height="160" rx="8" fill="#7a5230"/>
+    <circle cx="131" cy="330" r="72" fill="#4e9e3d"/>
+    <circle cx="80" cy="360" r="48" fill="#5cb04a"/>
+    <circle cx="182" cy="358" r="46" fill="#5cb04a"/>
+    <circle cx="131" cy="285" r="46" fill="#5cb04a"/>
+  </g>
+
+  <!-- árvore direita + galho do passarinho -->
+  <g>
+    <rect x="1028" y="360" width="26" height="180" rx="8" fill="#7a5230"/>
+    <path d="M 1036,395 Q 990,380 952,388" stroke="#7a5230" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <circle cx="1041" cy="300" r="78" fill="#4e9e3d"/>
+    <circle cx="985" cy="330" r="48" fill="#5cb04a"/>
+    <circle cx="1100" cy="332" r="50" fill="#5cb04a"/>
+    <circle cx="1041" cy="250" r="48" fill="#5cb04a"/>
+  </g>
+
+  <!-- passarinho (Sammya) -->
+  <g id="g-passaro" transform="translate(958,368)">
+    <line x1="-3" y1="8" x2="-5" y2="18" stroke="#5a4a3a" stroke-width="2"/>
+    <line x1="4" y1="8" x2="5" y2="18" stroke="#5a4a3a" stroke-width="2"/>
+    <path d="M -9,-2 L -20,-10 L -8,4 Z" fill="#2980b9"/>
+    <ellipse cx="0" cy="0" rx="12" ry="9" fill="#3498db"/>
+    <ellipse cx="-2" cy="-1" rx="7" ry="4.5" fill="#2980b9"/>
+    <circle cx="9" cy="-8" r="6.5" fill="#3498db"/>
+    <path d="M 14,-8 L 21,-6 L 14,-4 Z" fill="#f39c12"/>
+    <circle cx="10.5" cy="-9" r="1.3" fill="#1a1a2e"/>
+    <ellipse cx="0" cy="4" rx="6" ry="3.5" fill="#f5d76e"/>
+    <circle class="hotspot" data-spot="passaro" cx="2" cy="-3" r="22" fill="transparent"/>
+  </g>
+
+  <!-- poste com câmera (Yuri) -->
+  <g>
+    <rect x="306" y="215" width="9" height="425" fill="#4a5560"/>
+    <rect x="294" y="638" width="33" height="12" rx="4" fill="#3d4650"/>
+    <path d="M 310,218 Q 310,196 340,198" stroke="#4a5560" stroke-width="8" fill="none"/>
+    <ellipse cx="345" cy="202" rx="16" ry="10" fill="#5d6a76"/>
+    <ellipse cx="345" cy="206" rx="10" ry="5" fill="#fff3b8"/>
+    <!-- câmera de segurança -->
+    <g transform="translate(311,258) rotate(12)">
+      <rect x="0" y="-3" width="12" height="6" fill="#333d47"/>
+      <rect x="10" y="-9" width="32" height="17" rx="4" fill="#2c3640"/>
+      <circle cx="42" cy="-0.5" r="5.5" fill="#1a222b"/>
+      <circle cx="42" cy="-0.5" r="2.6" fill="#6bd5ff"/>
+      <circle cx="14" cy="-5" r="1.8" fill="#e74c3c"/>
+    </g>
+    <circle class="hotspot" data-spot="camera" cx="338" cy="258" r="26" fill="transparent"/>
+  </g>
+
+  <!-- terra (David) -->
+  <g>
+    <ellipse cx="175" cy="715" rx="135" ry="48" fill="#8d6742"/>
+    <ellipse cx="130" cy="705" rx="30" ry="10" fill="#7a5636"/>
+    <ellipse cx="215" cy="725" rx="38" ry="12" fill="#7a5636"/>
+    <ellipse cx="170" cy="738" rx="22" ry="7" fill="#6b4a2e"/>
+    <circle cx="95" cy="722" r="5" fill="#6b4a2e"/>
+    <circle cx="255" cy="708" r="6" fill="#6b4a2e"/>
+    <ellipse class="hotspot" data-spot="terra" cx="175" cy="715" rx="135" ry="48" fill="transparent"/>
+  </g>
+
+  <!-- ADVOGADO de costas (cabeça = Luís Gustavo) -->
+  <g id="g-advogado" transform="translate(485,352)">
+    <ellipse cx="62" cy="305" rx="58" ry="12" fill="#000" opacity=".15"/>
+    <!-- pernas -->
+    <rect x="40" y="195" width="17" height="95" fill="#23272e"/>
+    <rect x="67" y="195" width="17" height="95" fill="#23272e"/>
+    <rect x="33" y="288" width="28" height="11" rx="5" fill="#14171b"/>
+    <rect x="63" y="288" width="28" height="11" rx="5" fill="#14171b"/>
+    <!-- paletó -->
+    <path d="M 20,94 Q 62,80 104,94 L 93,205 L 31,205 Z" fill="#2f3542"/>
+    <line x1="62" y1="140" x2="62" y2="205" stroke="#23272e" stroke-width="3"/>
+    <rect x="49" y="86" width="26" height="8" rx="3" fill="#eef2f5"/>
+    <!-- braços -->
+    <path d="M 101,102 Q 116,148 108,182" stroke="#2f3542" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <path d="M 23,102 Q 10,146 18,176" stroke="#2f3542" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <circle cx="108" cy="187" r="7" fill="#e8b48a"/>
+    <circle cx="18" cy="181" r="7" fill="#e8b48a"/>
+    <!-- maleta -->
+    <path d="M 100,192 Q 108,186 116,192" stroke="#5a3d26" stroke-width="4" fill="none"/>
+    <rect x="90" y="192" width="52" height="36" rx="5" fill="#8b5e3c" stroke="#6b4527" stroke-width="2"/>
+    <line x1="90" y1="208" x2="142" y2="208" stroke="#6b4527" stroke-width="2"/>
+    <!-- cabeça de costas -->
+    <rect x="55" y="72" width="14" height="14" fill="#e8b48a"/>
+    <circle cx="62" cy="52" r="27" fill="#3d2b1f"/>
+    <circle cx="37" cy="56" r="5" fill="#e8b48a"/>
+    <circle cx="87" cy="56" r="5" fill="#e8b48a"/>
+    <path d="M 35,52 Q 62,20 89,52 Q 62,34 35,52" fill="#2e2016"/>
+    <circle class="hotspot" data-spot="advogado" cx="62" cy="52" r="31" fill="transparent"/>
+  </g>
+
+  <!-- MULHER com livro (dente = Álvaro, livro = Bianca) -->
+  <g id="g-mulher" transform="translate(655,362)">
+    <ellipse cx="60" cy="300" rx="52" ry="11" fill="#000" opacity=".15"/>
+    <!-- pernas -->
+    <rect x="47" y="198" width="11" height="55" fill="#e8b48a"/>
+    <rect x="62" y="198" width="11" height="55" fill="#e8b48a"/>
+    <ellipse cx="50" cy="256" rx="13" ry="6" fill="#c0392b"/>
+    <ellipse cx="70" cy="256" rx="13" ry="6" fill="#c0392b"/>
+    <!-- cabelo atrás -->
+    <path d="M 30,42 Q 22,110 34,128 L 46,120 L 46,60 Z" fill="#4a2c17"/>
+    <path d="M 90,42 Q 98,110 86,128 L 74,120 L 74,60 Z" fill="#4a2c17"/>
+    <!-- vestido -->
+    <path d="M 40,76 L 80,76 L 102,198 L 18,198 Z" fill="#e8617c"/>
+    <path d="M 40,76 L 80,76 L 84,100 L 36,100 Z" fill="#d4506b"/>
+    <!-- braço esquerdo (dela) caído -->
+    <path d="M 40,88 Q 26,124 32,152" stroke="#e8b48a" stroke-width="11" fill="none" stroke-linecap="round"/>
+    <!-- livro (Bianca) -->
+    <g transform="translate(60,122) rotate(-7)">
+      <rect x="-24" y="-17" width="48" height="34" rx="3" fill="#1e8a7a"/>
+      <rect x="-24" y="11" width="48" height="6" rx="2" fill="#f4f0e4"/>
+      <line x1="0" y1="-17" x2="0" y2="11" stroke="#16695d" stroke-width="3"/>
+      <rect class="hotspot" data-spot="livro" x="-27" y="-20" width="54" height="42" fill="transparent"/>
+    </g>
+    <!-- braço direito (dela) segurando o livro -->
+    <path d="M 80,88 Q 88,118 62,132" stroke="#e8b48a" stroke-width="11" fill="none" stroke-linecap="round"/>
+    <!-- cabeça -->
+    <rect x="54" y="64" width="12" height="12" fill="#e8b48a"/>
+    <circle cx="60" cy="46" r="25" fill="#e8b48a"/>
+    <!-- franja -->
+    <path d="M 34,44 Q 36,16 60,16 Q 84,16 86,44 Q 74,26 60,28 Q 46,26 34,44" fill="#4a2c17"/>
+    <!-- olhos -->
+    <circle cx="51" cy="44" r="2.6" fill="#2c1e12"/>
+    <circle cx="69" cy="44" r="2.6" fill="#2c1e12"/>
+    <path d="M 46,38 Q 51,35 56,38" stroke="#2c1e12" stroke-width="1.6" fill="none"/>
+    <path d="M 64,38 Q 69,35 74,38" stroke="#2c1e12" stroke-width="1.6" fill="none"/>
+    <!-- sorriso aberto com dentes (Álvaro) -->
+    <path d="M 47,56 Q 60,74 73,56 Q 60,62 47,56" fill="#a83a4a"/>
+    <path d="M 49,56.5 Q 60,61 71,56.5 L 71,60 Q 60,64 49,60 Z" fill="#ffffff"/>
+    <circle cx="44" cy="52" r="3.5" fill="#f2a0ae" opacity=".7"/>
+    <circle cx="76" cy="52" r="3.5" fill="#f2a0ae" opacity=".7"/>
+    <ellipse class="hotspot" data-spot="dente" cx="60" cy="59" rx="15" ry="9" fill="transparent"/>
+  </g>
+
+  <!-- flores decorativas (sem foto) -->
+  <g id="flores-deco"></g>
+
+  <!-- A flor especial (Duda) -->
+  <g id="g-flor" transform="translate(1005,690)">
+    <line x1="0" y1="8" x2="0" y2="52" stroke="#3e7d2f" stroke-width="4"/>
+    <path d="M 0,34 Q -16,28 -20,16 Q -4,20 0,34" fill="#4e9e3d"/>
+    <path d="M 0,42 Q 16,38 20,26 Q 4,30 0,42" fill="#4e9e3d"/>
+    <g>
+      <ellipse cx="0" cy="-13" rx="6.5" ry="10" fill="#ff6b9d"/>
+      <ellipse cx="12" cy="-4" rx="6.5" ry="10" fill="#ff6b9d" transform="rotate(72 0 0)"/>
+      <ellipse cx="0" cy="-13" rx="6.5" ry="10" fill="#ff6b9d" transform="rotate(144 0 0)"/>
+      <ellipse cx="0" cy="-13" rx="6.5" ry="10" fill="#ff6b9d" transform="rotate(216 0 0)"/>
+      <ellipse cx="0" cy="-13" rx="6.5" ry="10" fill="#ff6b9d" transform="rotate(288 0 0)"/>
+      <circle cx="0" cy="0" r="6" fill="#ffd166"/>
+    </g>
+    <circle class="hotspot" data-spot="flor" cx="0" cy="-2" r="24" fill="transparent"/>
+  </g>
+
+  <!-- tufos de grama -->
+  <g stroke="#3e7d2f" stroke-width="3" stroke-linecap="round" fill="none">
+    <path d="M 420,690 q -4,-14 -8,-18 M 420,690 q 0,-16 2,-20 M 420,690 q 6,-12 10,-15"/>
+    <path d="M 900,600 q -4,-12 -8,-15 M 900,600 q 0,-14 2,-17 M 900,600 q 5,-10 9,-13"/>
+    <path d="M 560,760 q -4,-14 -8,-18 M 560,760 q 0,-16 2,-20 M 560,760 q 6,-12 10,-15"/>
+    <path d="M 80,620 q -4,-12 -8,-15 M 80,620 q 0,-14 2,-17 M 80,620 q 5,-10 9,-13"/>
+  </g>
+</svg>
+</div>
+
+<!-- Modal -->
+<div id="overlay">
+  <div class="card" id="card-achou">
+    <svg id="palco-escavadeira" viewBox="0 0 300 110" width="240" height="88">
+      <rect x="0" y="95" width="300" height="15" fill="#8d6742"/>
+      <g transform="translate(160,0)">
+        <rect x="60" y="55" width="70" height="35" rx="6" fill="#f5b912"/>
+        <rect x="95" y="28" width="34" height="30" rx="4" fill="#f5cc4a"/>
+        <rect x="100" y="33" width="24" height="16" rx="2" fill="#9adcf0"/>
+        <circle cx="78" cy="93" r="13" fill="#333"/>
+        <circle cx="78" cy="93" r="6" fill="#777"/>
+        <circle cx="118" cy="93" r="13" fill="#333"/>
+        <circle cx="118" cy="93" r="6" fill="#777"/>
+        <g class="braco-escavadeira">
+          <path d="M 84,30 L 20,48" stroke="#f5b912" stroke-width="10" stroke-linecap="round" fill="none"/>
+          <path d="M 20,48 L 2,78" stroke="#e0a600" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <path d="M 2,78 q -14,2 -12,16 q 12,8 20,-4 Z" fill="#8a8f98"/>
+        </g>
+      </g>
+      <circle cx="120" cy="90" r="4" fill="#6b4a2e"/>
+      <circle cx="135" cy="82" r="3" fill="#6b4a2e"/>
+      <circle cx="108" cy="80" r="3" fill="#6b4a2e"/>
+    </svg>
+    <div class="foto-wrap" id="foto-wrap"></div>
+    <h2 id="nome-achado"></h2>
+    <p class="msg" id="msg-achado"></p>
+    <button onclick="fecharModal()">Continuar procurando</button>
+  </div>
+</div>
+
+<!-- Tela final -->
+<div id="overlay-final" style="position:fixed;inset:0;background:rgba(10,10,25,.9);display:none;align-items:center;justify-content:center;z-index:60;padding:16px;">
+  <div class="card" id="final">
+    <h2>🎉 Encontraram todo mundo! 🎉</h2>
+    <div class="casais">
+      <div class="casal"><span>Yuri</span> ❤️ <span>Duda</span></div>
+      <div class="casal"><span>Álvaro</span> ❤️ <span>Andressa</span></div>
+      <div class="casal"><span>David</span> ❤️ <span>Bianca</span></div>
+      <div class="casal"><span>Sammya</span> ❤️ <span>Luís Gustavo</span></div>
+    </div>
+    <p class="msg">Os 4 casais estão completos! 💘</p>
+    <button onclick="reiniciar()">Jogar de novo</button>
+  </div>
+</div>
+
+<script>
+const PONTOS = {
+  camera:   { nome: 'Yuri',         arquivo: 'yuri',        msg: 'Flagrado pela câmera de segurança do poste! 📹' },
+  terra:    { nome: 'David',        arquivo: 'david',       msg: 'A retroescavadeira desenterrou o David! 🚜', escavadeira: true },
+  advogado: { nome: 'Luís Gustavo', arquivo: 'luisgustavo', msg: 'O advogado misterioso era ele! ⚖️' },
+  flor:     { nome: 'Duda',         arquivo: 'duda',        msg: 'Escondida na flor mais bonita do parque! 🌸' },
+  livro:    { nome: 'Bianca',       arquivo: 'bianca',      msg: 'Marcando página no livro da moça! 📖' },
+  aviao:    { nome: 'Andressa',     arquivo: 'andressa',    msg: 'Sobrevoando o parque de avião! ✈️' },
+  dente:    { nome: 'Álvaro',       arquivo: 'alvaro',      msg: 'Escondido no sorriso da moça! 😁' },
+  passaro:  { nome: 'Sammya',       arquivo: 'sammya',      msg: 'Cantando junto com o passarinho! 🐦' },
+};
+const EXTENSOES = ['jpg', 'jpeg', 'png', 'webp'];
+const achados = new Set();
+
+const svg = document.getElementById('cena');
+const overlay = document.getElementById('overlay');
+const overlayFinal = document.getElementById('overlay-final');
+const placar = document.getElementById('placar');
+
+// monta o placar
+for (const chave of Object.keys(PONTOS)) {
+  const chip = document.createElement('div');
+  chip.className = 'chip';
+  chip.id = 'chip-' + chave;
+  chip.textContent = '?????';
+  placar.appendChild(chip);
+}
+
+// flores decorativas (não clicáveis)
+const deco = document.getElementById('flores-deco');
+const floresDeco = [
+  [905, 705, '#ffd166'], [955, 738, '#f4f0e4'], [1065, 715, '#b28dff'],
+  [1120, 690, '#ffd166'], [1150, 745, '#ff9d6b'], [355, 690, '#f4f0e4'],
+  [400, 735, '#b28dff'], [640, 720, '#ffd166'], [710, 755, '#ff9d6b'],
+];
+for (const [x, y, cor] of floresDeco) {
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('transform', `translate(${x},${y})`);
+  let petalas = '';
+  for (let a = 0; a < 360; a += 72) {
+    petalas += `<ellipse cx="0" cy="-9" rx="4.5" ry="7" fill="${cor}" transform="rotate(${a} 0 0)"/>`;
+  }
+  g.innerHTML = `<line x1="0" y1="4" x2="0" y2="34" stroke="#3e7d2f" stroke-width="3"/>${petalas}<circle r="4" fill="#e0a600"/>`;
+  deco.appendChild(g);
+}
+
+// cliques nos pontos escondidos
+svg.addEventListener('click', (ev) => {
+  const alvo = ev.target.closest('.hotspot');
+  if (alvo && !achados.has(alvo.dataset.spot)) {
+    encontrou(alvo);
+  } else if (!alvo) {
+    ondinha(ev);
+  }
+});
+
+function encontrou(el) {
+  const chave = el.dataset.spot;
+  const p = PONTOS[chave];
+  achados.add(chave);
+  el.classList.add('achado');
+  marcaAchado(el);
+
+  const chip = document.getElementById('chip-' + chave);
+  chip.textContent = '✓ ' + p.nome;
+  chip.classList.add('achou');
+  document.getElementById('contador').textContent = achados.size + '/8';
+
+  // modal
+  document.getElementById('nome-achado').textContent = p.nome;
+  document.getElementById('msg-achado').textContent = p.msg;
+  const palco = document.getElementById('palco-escavadeira');
+  const wrap = document.getElementById('foto-wrap');
+  palco.classList.toggle('ativo', !!p.escavadeira);
+  wrap.classList.toggle('subindo', !!p.escavadeira);
+  if (p.escavadeira) {
+    const braco = palco.querySelector('.braco-escavadeira');
+    braco.style.animation = 'none';
+    void braco.offsetWidth;
+    braco.style.animation = '';
+  }
+  carregarFoto(wrap, p);
+  overlay.classList.add('aberto');
+}
+
+function carregarFoto(wrap, p) {
+  wrap.innerHTML = '';
+  const img = document.createElement('img');
+  img.alt = p.nome;
+  let i = 0;
+  img.onerror = () => {
+    i++;
+    if (i < EXTENSOES.length) {
+      img.src = `fotos/${p.arquivo}.${EXTENSOES[i]}`;
+    } else {
+      wrap.innerHTML = `<div class="foto-placeholder">
+        <div class="letra">${p.nome[0]}</div>
+        <small>adicione a foto em<br><b>fotos/${p.arquivo}.jpg</b></small>
+      </div>`;
+    }
+  };
+  img.src = `fotos/${p.arquivo}.${EXTENSOES[0]}`;
+  wrap.appendChild(img);
+}
+
+function marcaAchado(el) {
+  const bb = el.getBBox();
+  const cx = bb.x + bb.width / 2;
+  const cy = bb.y + bb.height / 2;
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'marca-achado');
+  g.innerHTML = `<circle cx="${cx}" cy="${cy}" r="13" fill="#ffd166" stroke="#fff" stroke-width="2.5"/>
+    <path d="M ${cx - 6},${cy} l 4,5 l 8,-9" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  (el.closest('g') || svg).appendChild(g);
+}
+
+function ondinha(ev) {
+  const pt = svg.createSVGPoint();
+  pt.x = ev.clientX;
+  pt.y = ev.clientY;
+  const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+  const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  c.setAttribute('cx', p.x);
+  c.setAttribute('cy', p.y);
+  c.setAttribute('r', 4);
+  c.setAttribute('fill', 'none');
+  c.setAttribute('stroke', '#ffffff');
+  c.setAttribute('stroke-width', 3);
+  c.setAttribute('class', 'ripple');
+  svg.appendChild(c);
+  setTimeout(() => c.remove(), 650);
+}
+
+function fecharModal() {
+  overlay.classList.remove('aberto');
+  if (achados.size === Object.keys(PONTOS).length) {
+    overlayFinal.style.display = 'flex';
+  }
+}
+
+function reiniciar() {
+  location.reload();
+}
+
+overlay.addEventListener('click', (ev) => {
+  if (ev.target === overlay) fecharModal();
+});
+</script>
+</body>
+</html>
