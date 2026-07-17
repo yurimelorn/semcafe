@@ -682,6 +682,7 @@
     <rect x="-30" y="-38" width="60" height="72" rx="4" fill="#fff"/>
     <rect x="-24" y="-32" width="48" height="52" fill="#8aa8c8"/>
     <text x="0" y="-2" text-anchor="middle" font-size="26">📷</text>
+    <image id="mini-david" x="-24" y="-32" width="48" height="52" preserveAspectRatio="xMidYMid slice"/>
   </g>
 
   <!-- 🐝 ABELHA (animação da Duda) -->
@@ -691,6 +692,7 @@
       <rect x="-14" y="0" width="28" height="34" rx="3" fill="#fff"/>
       <rect x="-11" y="3" width="22" height="24" fill="#8aa8c8"/>
       <text x="0" y="20" text-anchor="middle" font-size="13">📷</text>
+      <image id="mini-duda" x="-11" y="3" width="22" height="24" preserveAspectRatio="xMidYMid slice"/>
     </g>
     <ellipse id="asa1" cx="-3" cy="-12" rx="7" ry="9" fill="#dcefff" opacity=".85">
       <animate attributeName="ry" values="9;3;9" dur=".14s" repeatCount="indefinite"/>
@@ -737,6 +739,7 @@
         <rect x="-48" y="-62" width="96" height="116" rx="5" fill="#fff"/>
         <rect x="-40" y="-54" width="80" height="88" fill="#8aa8c8"/>
         <text x="0" y="-4" text-anchor="middle" font-size="40">📷</text>
+        <image id="mini-bianca" x="-40" y="-54" width="80" height="88" preserveAspectRatio="xMidYMid slice"/>
       </g>
     </g>
   </g>
@@ -825,6 +828,7 @@
 
 <div id="botoes">
   <button id="btn-dica">💡 Mostrar dicas (3s)</button>
+  <button id="btn-som">🔊 Som</button>
   <button id="btn-reiniciar">🔄 Reiniciar</button>
 </div>
 
@@ -864,14 +868,14 @@
 // ======= CONFIGURAÇÃO DAS PESSOAS =======
 // Para adicionar as fotos, salve os arquivos na pasta fotos/ com estes nomes:
 const PESSOAS = [
-  { id: 'yuri',        nome: 'Yuri',         artigo: 'O', foto: 'fotos/yuri.jpg' },
-  { id: 'david',       nome: 'David',        artigo: 'O', foto: 'fotos/david.jpg' },
-  { id: 'luisgustavo', nome: 'Luís Gustavo', artigo: 'O', foto: 'fotos/luisgustavo.jpg' },
-  { id: 'duda',        nome: 'Duda',         artigo: 'A', foto: 'fotos/duda.jpg' },
-  { id: 'bianca',      nome: 'Bianca',       artigo: 'A', foto: 'fotos/bianca.jpg' },
-  { id: 'andressa',    nome: 'Andressa',     artigo: 'A', foto: 'fotos/andressa.jpg' },
-  { id: 'alvaro',      nome: 'Álvaro',       artigo: 'O', foto: 'fotos/alvaro.jpg' },
-  { id: 'sammya',      nome: 'Sammya',       artigo: 'A', foto: 'fotos/sammya.jpg' },
+  { id: 'yuri',        nome: 'Yuri',         artigo: 'O', foto: 'fotos/yuri.png' },
+  { id: 'david',       nome: 'David',        artigo: 'O', foto: 'fotos/david.png' },
+  { id: 'luisgustavo', nome: 'Luís Gustavo', artigo: 'O', foto: 'fotos/luisgustavo.png' },
+  { id: 'duda',        nome: 'Duda',         artigo: 'A', foto: 'fotos/duda.png' },
+  { id: 'bianca',      nome: 'Bianca',       artigo: 'A', foto: 'fotos/bianca.png' },
+  { id: 'andressa',    nome: 'Andressa',     artigo: 'A', foto: 'fotos/andressa.png' },
+  { id: 'alvaro',      nome: 'Álvaro',       artigo: 'O', foto: 'fotos/alvaro.png' },
+  { id: 'sammya',      nome: 'Sammya',       artigo: 'A', foto: 'fotos/sammya.png' },
 ];
 
 const achados = new Set();
@@ -941,12 +945,14 @@ function revelar(pessoa) {
 
   $('cartao').classList.toggle('explosao', pessoa.id === 'andressa');
   $('veu').classList.add('aberto');
+  som.revelou();
 }
 
 function fecharCartao() {
   $('veu').classList.remove('aberto');
   if (achados.size === PESSOAS.length) {
     $('final').classList.add('aberto');
+    som.fanfarra();
     soltarConfete();
   }
 }
@@ -965,6 +971,87 @@ function animate(dur, passo, fim, suave = true) {
   }
   requestAnimationFrame(frame);
 }
+
+// ======= SONS (sintetizados na hora, sem arquivos) =======
+let actx = null, mudo = false;
+function audio() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+// tom simples com envelope (f2 = desliza até essa frequência)
+function tom({ f = 440, f2, dur = .3, tipo = 'sine', vol = .2, at = 0 }) {
+  if (mudo) return;
+  const a = audio(), t0 = a.currentTime + at;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = tipo;
+  o.frequency.setValueAtTime(f, t0);
+  if (f2) o.frequency.exponentialRampToValueAtTime(Math.max(f2, 1), t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + .012);
+  g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+  o.connect(g).connect(a.destination);
+  o.start(t0); o.stop(t0 + dur + .05);
+}
+// rajada de ruído filtrado (impactos, rasgos, flashes)
+function ruido({ dur = .3, vol = .3, freq = 1000, tipoF = 'lowpass', q = 1, at = 0 }) {
+  if (mudo) return;
+  const a = audio(), t0 = a.currentTime + at;
+  const n = Math.max(1, Math.floor(a.sampleRate * dur));
+  const buf = a.createBuffer(1, n, a.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const src = a.createBufferSource(); src.buffer = buf;
+  const fl = a.createBiquadFilter(); fl.type = tipoF; fl.frequency.value = freq; fl.Q.value = q;
+  const g = a.createGain();
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+  src.connect(fl).connect(g).connect(a.destination);
+  src.start(t0);
+}
+// som contínuo (motor, zumbido) — retorna controle para ajustar e parar
+function motor({ f = 90, tipo = 'sawtooth', vol = .1, vib = 0, vibF = 6 }) {
+  if (mudo) return { ajusta() {}, para() {} };
+  const a = audio();
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = tipo; o.frequency.value = f;
+  let lfo = null;
+  if (vib) {
+    lfo = a.createOscillator();
+    const lg = a.createGain();
+    lfo.frequency.value = vibF; lg.gain.value = vib;
+    lfo.connect(lg).connect(o.frequency); lfo.start();
+  }
+  g.gain.value = vol;
+  o.connect(g).connect(a.destination);
+  o.start();
+  return {
+    ajusta(nf, nvol) { if (nf) o.frequency.value = nf; if (nvol != null) g.gain.value = nvol; },
+    para() {
+      const t = a.currentTime;
+      g.gain.setTargetAtTime(.0001, t, .06);
+      o.stop(t + .4); if (lfo) lfo.stop(t + .4);
+    }
+  };
+}
+// sons prontos
+const som = {
+  ting()      { tom({ f: 1975, dur: .8, vol: .22 }); tom({ f: 2637, dur: 1, vol: .12, at: .03 }); },
+  revelou()   { [523, 659, 784].forEach((f, i) => tom({ f, dur: .3, tipo: 'triangle', vol: .16, at: i * .09 })); },
+  fanfarra()  { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tom({ f, dur: .35, tipo: 'triangle', vol: .18, at: i * .13 })); },
+  explosao()  { ruido({ dur: .9, vol: .5, freq: 350 }); tom({ f: 160, f2: 35, dur: .8, vol: .4 }); },
+  obturador() { ruido({ dur: .05, vol: .3, freq: 3500, tipoF: 'highpass' }); ruido({ dur: .05, vol: .25, freq: 3500, tipoF: 'highpass', at: .09 }); },
+  beep()      { tom({ f: 880, dur: .1, tipo: 'square', vol: .1 }); tom({ f: 880, dur: .1, tipo: 'square', vol: .1, at: .18 }); },
+  cavada()    { tom({ f: 95, f2: 40, dur: .3, vol: .45 }); ruido({ dur: .25, vol: .3, freq: 350 }); },
+  rasgo()     { ruido({ dur: .4, vol: .4, freq: 1600, tipoF: 'bandpass', q: .8 }); },
+  rugido()    { tom({ f: 150, f2: 60, dur: 1, tipo: 'sawtooth', vol: .3 }); ruido({ dur: 1, vol: .25, freq: 250 }); },
+  pagina()    { ruido({ dur: .18, vol: .22, freq: 2600, tipoF: 'bandpass', q: 1.5 }); },
+  polen()     { tom({ f: 1319, dur: .3, tipo: 'triangle', vol: .15 }); tom({ f: 1568, dur: .4, tipo: 'triangle', vol: .12, at: .12 }); }
+};
+$('btn-som').addEventListener('click', () => {
+  mudo = !mudo;
+  $('btn-som').textContent = mudo ? '🔇 Mudo' : '🔊 Som';
+});
 
 // tremor de tela
 function tremer() {
@@ -999,6 +1086,20 @@ function particulas(px, py, cores, n = 8, forca = 130) {
   }, () => parts.forEach(pp => pp.el.remove()), false);
 }
 
+// fumacinha do escapamento
+function fumaca(x, y) {
+  const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  c.setAttribute('fill', '#9aa3b0');
+  c.setAttribute('pointer-events', 'none');
+  $('cena').appendChild(c);
+  animate(900, (e, t) => {
+    c.setAttribute('cx', x + t * 14);
+    c.setAttribute('cy', y - t * 34);
+    c.setAttribute('r', 3 + t * 8);
+    c.setAttribute('opacity', .5 * (1 - t));
+  }, () => c.remove(), false);
+}
+
 // notinha musical subindo (dança do 67)
 function nota(x, y) {
   const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -1020,14 +1121,20 @@ function nota(x, y) {
 function animDavid(p, done) {
   const retro = $('retro'), foto = $('foto-puxada');
   retro.setAttribute('opacity', '1');
+  const eng = motor({ f: 52, vol: .13, vib: 7, vibF: 12 }); // ronco de diesel
   animate(1400, e => {
-    retro.setAttribute('transform', `translate(${-220 + e * 220},455)`);
+    const x = -220 + e * 220;
+    retro.setAttribute('transform', `translate(${x},455)`);
+    if (Math.random() < .14) fumaca(x + 14, 442);
   }, () => {
     let vezes = 0;
     const cavar = () => {
+      eng.ajusta(70);
       animate(320, e => {
         $('retro-braco').setAttribute('transform', `rotate(${Math.sin(e * Math.PI) * 14} 78 24)`);
       }, () => {
+        eng.ajusta(52);
+        som.cavada();
         tremer();
         particulas(175, 505, ['#8a6238', '#a0764a', '#6e4c28']);
         if (++vezes < 3) cavar();
@@ -1037,6 +1144,7 @@ function animDavid(p, done) {
             foto.setAttribute('transform',
               `translate(160,${520 - e * 110}) rotate(${Math.sin(e * Math.PI * 2) * 6})`);
           }, () => setTimeout(() => {
+            eng.para();
             retro.setAttribute('opacity', '0');
             foto.setAttribute('opacity', '0');
             retro.setAttribute('transform', 'translate(-220,455)');
@@ -1050,17 +1158,24 @@ function animDavid(p, done) {
   });
 }
 
-// 📷 Yuri: troca para a visão da câmera; tem que achar ele lá
+// 📷 Yuri: flash + estalo do obturador, e troca para a visão da câmera
 function animYuri(p, done) {
-  const agora = new Date();
-  $('cctv-hora').textContent = agora.toLocaleDateString('pt-BR') + ' ' +
-    agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  $('cctv').classList.add('aberto');
-  ocupado = false; // libera para clicar no Yuri dentro da câmera
-  // o "done" é chamado quando clicarem na figura (ver listener abaixo)
-  animYuri.finalizar = done;
+  som.obturador();
+  $('flash').style.opacity = '1';
+  setTimeout(() => { $('flash').style.opacity = '0'; }, 130);
+  setTimeout(() => {
+    const agora = new Date();
+    $('cctv-hora').textContent = agora.toLocaleDateString('pt-BR') + ' ' +
+      agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    $('cctv').classList.add('aberto');
+    som.beep();
+    ocupado = false; // libera para clicar no Yuri dentro da câmera
+    // o "done" é chamado quando clicarem na figura (ver listener abaixo)
+    animYuri.finalizar = done;
+  }, 320);
 }
 $('spot-yuri-cctv').addEventListener('click', () => {
+  som.obturador();
   $('cctv').classList.remove('aberto');
   if (animYuri.finalizar) { const f = animYuri.finalizar; animYuri.finalizar = null; f(); }
 });
@@ -1068,23 +1183,30 @@ $('cctv-fechar').addEventListener('click', () => {
   $('cctv').classList.remove('aberto');
   animYuri.finalizar = null;
 });
-// rosto do Yuri na câmera: só usa a foto se o arquivo existir
-(() => {
+// fotos reais dentro das animações (rosto na câmera e mini-fotos), se existirem
+[
+  ['img-rosto-yuri', 'fotos/yuri.png'],
+  ['mini-david', 'fotos/david.png'],
+  ['mini-duda', 'fotos/duda.png'],
+  ['mini-bianca', 'fotos/bianca.png']
+].forEach(([id, src]) => {
   const im = new Image();
-  im.onload = () => $('img-rosto-yuri').setAttribute('href', 'fotos/yuri.jpg');
-  im.src = 'fotos/yuri.jpg';
-})();
+  im.onload = () => $(id).setAttribute('href', src);
+  im.src = src;
+});
 
 // 🐝 Duda: abelha vem coletar o pólen e sai com a foto
 function animDuda(p, done) {
   const abelha = $('abelha'), flor = $('flor-duda');
   abelha.setAttribute('opacity', '1');
+  const zum = motor({ f: 175, vol: .06, vib: 28, vibF: 27 }); // zumbido
   const fx = 645, fy = 478; // pairando sobre a flor
-  animate(1400, e => {
+  animate(1400, (e, t) => {
     // curva de (1020,320) até a flor
     const x = 1020 + (fx - 1020) * e;
     const y = 320 + (fy - 320) * e + Math.sin(e * Math.PI) * -60;
     abelha.setAttribute('transform', `translate(${x},${y})`);
+    zum.ajusta(175 + Math.sin(t * 18) * 20);
   }, () => {
     // coletando: balança na flor
     $('bzz').setAttribute('opacity', '1');
@@ -1095,12 +1217,14 @@ function animDuda(p, done) {
     }, () => {
       $('bzz').setAttribute('opacity', '0');
       flor.setAttribute('transform', '');
+      som.polen();
       $('abelha-foto').setAttribute('opacity', '1');
       animate(1500, e => {
         const x = fx + (-120 - fx) * e;
         const y = fy + (200 - fy) * e - Math.sin(e * Math.PI) * 40;
         abelha.setAttribute('transform', `translate(${x},${y})`);
       }, () => {
+        zum.para();
         abelha.setAttribute('opacity', '0');
         $('abelha-foto').setAttribute('opacity', '0');
         abelha.setAttribute('transform', 'translate(1020,320)');
@@ -1114,6 +1238,7 @@ function animDuda(p, done) {
 function animAndressa(p, done) {
   const aviao = $('spot-andressa');
   aviao.parentNode.appendChild(aviao); // traz para a frente de tudo
+  const eng = motor({ f: 105, vol: .07, vib: 5, vibF: 9 }); // turbina ao longe
   // 1) balança as asas: te viu!
   animate(900, (e, t) => {
     const x = 430 + 55 * e;
@@ -1128,8 +1253,12 @@ function animAndressa(p, done) {
       const x = 485 + (Math.random() - .5) * jitter;
       const y = 108 + (315 - 108) * e + (Math.random() - .5) * jitter;
       aviao.setAttribute('transform', `translate(${x},${y}) rotate(${8 - 8 * e}) scale(${s})`);
+      eng.ajusta(105 + 260 * e, .07 + .2 * e); // turbina chegando perto
     }, () => {
+      eng.para();
+      som.explosao();
       tremer();
+      particulas(480, 300, ['#ff9a3d', '#ffd95e', '#e05a52', '#9aa3b0'], 16, 240);
       $('flash').style.opacity = '1';
       setTimeout(() => {
         aviao.setAttribute('transform', 'translate(430,80) rotate(-6)');
@@ -1143,6 +1272,7 @@ function animAndressa(p, done) {
 // ✨ Álvaro: brilho no sorriso dela, com "TING!"
 function animAlvaro(p, done) {
   const brilho = $('brilho');
+  som.ting();
   brilho.setAttribute('opacity', '1');
   animate(1500, (e, t) => {
     const s = Math.sin(t * Math.PI) * 2;
@@ -1163,6 +1293,7 @@ function animBianca(p, done) {
   livrao.setAttribute('opacity', '1');
   let folhas = 0;
   const folhear = () => {
+    som.pagina();
     pag.setAttribute('opacity', '1');
     animate(420, (e, t) => {
       const sx = Math.cos(t * Math.PI); // 1 → -1 (página virando)
@@ -1173,6 +1304,7 @@ function animBianca(p, done) {
       pag.setAttribute('transform', '');
       if (++folhas < 3) folhear();
       else {
+        som.polen();
         const foto = $('livrao-foto');
         foto.setAttribute('opacity', '1');
         animate(700, e => {
@@ -1200,6 +1332,7 @@ function animLuis(p, done) {
   }, () => {
     // 2) cresce, fica verde e rasga o paletó
     tremer();
+    som.rasgo();
     animate(1100, (e, t) => {
       const s = 1 + .35 * e;
       adv.setAttribute('transform', `translate(415,${330 - (s - 1) * 182}) scale(${s})`);
@@ -1215,6 +1348,7 @@ function animLuis(p, done) {
     }, () => {
       // 3) rugido, poeira e chão tremendo
       tremer();
+      som.rugido();
       particulas(415, 508, ['#9aa3b0', '#c8cdd4', '#7e8794'], 10, 100);
       $('texto-hulk').setAttribute('opacity', '1');
       animate(700, (e, t) => {
@@ -1243,11 +1377,19 @@ function animSammya(p, done) {
     const passo = Math.sin(t * 26) * 6;
     boy.setAttribute('transform', `translate(${x},${y - Math.abs(passo)}) scale(${s}) rotate(${passo * .6})`);
   }, () => {
-    // dança 67: braços de balança + pulinho + notas musicais
+    // dança 67: braços de balança + pulinho + notas musicais + batida
     boy.setAttribute('transform', 'translate(480,560) scale(1.7)');
     texto.setAttribute('opacity', '1');
     const notas = setInterval(() => nota(400 + Math.random() * 160, 420), 320);
     setTimeout(() => clearInterval(notas), 2400);
+    for (let i = 0; i < 7; i++) { // bumbo + chimbal
+      tom({ f: 165, f2: 45, dur: .2, vol: .5, at: i * .4 });
+      ruido({ dur: .05, vol: .1, freq: 7000, tipoF: 'highpass', at: i * .4 + .2 });
+    }
+    for (let i = 0; i < 3; i++) { // "SIX... SEVEN..."
+      tom({ f: 330, dur: .3, tipo: 'square', vol: .09, at: i * .8 + .05 });
+      tom({ f: 392, dur: .3, tipo: 'square', vol: .09, at: i * .8 + .45 });
+    }
     animate(2600, (e, t) => {
       const ph = t * Math.PI * 2 * 3.2;
       const sobe = Math.sin(ph);

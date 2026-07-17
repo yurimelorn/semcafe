@@ -23,8 +23,12 @@ tem sua própria animação de revelação:
 Ao achar alguém aparece: **"🎉 PARABÉNS! VOCÊ ENCONTROU A/O …! FALTAM X
 PESSOAS PARA ENCONTRAR"** com a foto da pessoa. Achou os 8 → confete! 🎊
 
-Extras: placar com os 8 nomes, botão 💡 de dicas (pisca os pontos por 3s) e
-botão de reiniciar.
+Extras: placar com os 8 nomes, botão 💡 de dicas (pisca os pontos por 3s),
+botão de reiniciar e **efeitos sonoros sintetizados** (sem arquivos de áudio):
+"TING!" do dente, turbina e explosão do avião, estalo do obturador e beep da
+câmera, ronco de diesel e baques da retroescavadeira, zumbido da abelha,
+rasgo e rugido do Hulk, batida da dança do 67, folhear de páginas, e uma
+fanfarra na vitória. Botão 🔊 liga/desliga o som.
 
 ## Celular / tablet
 
