@@ -81,9 +81,19 @@
   }
   #palco svg { display: block; width: 100%; height: auto; }
 
-  .hotspot { cursor: pointer; }
-  .hotspot:hover { filter: brightness(1.15); }
+  /* nada de cursor nem destaque no hover: achar é o desafio! */
+  .hotspot { cursor: default; }
   #retro, #foto-puxada, #abelha, #livrao, #texto67, #brilho, #texto-hulk { pointer-events: none; }
+
+  /* tremor de tela (impactos) */
+  @keyframes tremePalco {
+    0%, 100% { transform: translate(0,0); }
+    20% { transform: translate(-7px,4px); }
+    40% { transform: translate(6px,-5px); }
+    60% { transform: translate(-5px,-3px); }
+    80% { transform: translate(4px,3px); }
+  }
+  #palco.treme { animation: tremePalco .45s; }
 
   /* pulso de dica */
   @keyframes pulso {
@@ -358,16 +368,32 @@
 
   <!-- ✈️ AVIÃO — Andressa -->
   <g id="spot-andressa" class="hotspot" transform="translate(430,80) rotate(-6)">
-    <ellipse cx="0" cy="0" rx="52" ry="11" fill="#e8edf2"/>
-    <path d="M 40 -3 L 62 -2 L 62 2 L 40 3 Z" fill="#d0d8e0"/>
-    <path d="M -14 -2 L -46 -26 L -34 -28 L -4 -6 Z" fill="#c8d2dc"/>
-    <path d="M -12 2 L -38 22 L -28 24 L -2 6 Z" fill="#b8c4d0"/>
-    <path d="M -52 -2 L -66 -16 L -58 -17 L -44 -5 Z" fill="#c8d2dc"/>
-    <circle cx="22" cy="-3" r="3" fill="#6aa5c8"/>
-    <circle cx="10" cy="-3" r="3" fill="#6aa5c8"/>
-    <circle cx="-2" cy="-3" r="3" fill="#6aa5c8"/>
-    <path d="M -66 -14 q -30 4 -60 0" stroke="#ffffff" stroke-width="3" fill="none" opacity=".7" stroke-linecap="round"/>
-    <circle class="dica-anel" cx="0" cy="-2" r="60"/>
+    <!-- rastro de fumaça -->
+    <path d="M -70 -6 q -34 2 -64 -4" stroke="#ffffff" stroke-width="4" fill="none" opacity=".6" stroke-linecap="round"/>
+    <path d="M -70 4 q -30 6 -56 2" stroke="#ffffff" stroke-width="3" fill="none" opacity=".4" stroke-linecap="round"/>
+    <!-- asa de trás (do outro lado) -->
+    <path d="M 0 -6 L -26 -32 L -12 -34 L 14 -9 Z" fill="#b8c4d2"/>
+    <!-- fuselagem -->
+    <path d="M -58 0 Q -52 -9 -28 -10 L 34 -10 Q 56 -9 64 0 Q 56 8 34 9 L -28 9 Q -52 8 -58 0 Z" fill="#f2f5f9"/>
+    <path d="M -58 0 Q -40 6 0 7 L 34 8 Q 56 8 64 0 Q 50 12 20 11 L -30 10 Q -52 7 -58 0 Z" fill="#ccd6e2"/>
+    <!-- cauda -->
+    <path d="M -54 -3 L -68 -28 L -57 -29 L -42 -8 Z" fill="#e0566e"/>
+    <path d="M -52 0 L -68 10 L -58 11 L -45 5 Z" fill="#c2cdd9"/>
+    <!-- janelinhas -->
+    <circle cx="28" cy="-4" r="2.4" fill="#3d6d96"/>
+    <circle cx="18" cy="-4" r="2.4" fill="#3d6d96"/>
+    <circle cx="8" cy="-4" r="2.4" fill="#3d6d96"/>
+    <circle cx="-2" cy="-4" r="2.4" fill="#3d6d96"/>
+    <circle cx="-12" cy="-4" r="2.4" fill="#3d6d96"/>
+    <!-- para-brisa -->
+    <path d="M 50 -7 Q 58 -6 62 -2 L 52 -2 Z" fill="#2b5a80"/>
+    <!-- listra -->
+    <path d="M -50 4 L 58 3" stroke="#e0566e" stroke-width="2.4" stroke-linecap="round"/>
+    <!-- asa da frente com turbina -->
+    <path d="M 4 -2 L -30 30 L -12 32 L 18 3 Z" fill="#e4eaf1"/>
+    <ellipse cx="-14" cy="24" rx="9" ry="5.5" fill="#8f9bb0"/>
+    <ellipse cx="-20" cy="24" rx="3" ry="4.5" fill="#3a4353"/>
+    <circle class="dica-anel" cx="0" cy="-2" r="62"/>
   </g>
 
   <!-- árvore ao fundo esquerda -->
@@ -408,6 +434,14 @@
       <path d="M -5 -85 q 5 4 10 0" stroke="#222" stroke-width="1.5" fill="none"/>
     </g>
     <circle class="dica-anel" cx="0" cy="-50" r="46"/>
+  </g>
+  <!-- moita que esconde metade do menino -->
+  <g>
+    <ellipse cx="178" cy="346" rx="27" ry="15" fill="#3e7a30"/>
+    <ellipse cx="206" cy="349" rx="25" ry="13" fill="#4e9440"/>
+    <ellipse cx="192" cy="339" rx="19" ry="11" fill="#356b28"/>
+    <circle cx="170" cy="336" r="3" fill="#e8639a"/>
+    <circle cx="212" cy="341" r="3" fill="#f2c14e"/>
   </g>
 
   <!-- árvore direita com galho -->
@@ -620,8 +654,11 @@
 
   <!-- ✨ brilho do dente (Álvaro) -->
   <g id="brilho" opacity="0" transform="translate(555,343)">
+    <circle id="brilho-anel" r="4" fill="none" stroke="#ffffff" stroke-width="3" opacity="0"/>
     <path id="brilho-estrela" d="M 0 -14 L 3.5 -3.5 L 14 0 L 3.5 3.5 L 0 14 L -3.5 3.5 L -14 0 L -3.5 -3.5 Z" fill="#ffffff"/>
     <path d="M 0 -7 L 1.8 -1.8 L 7 0 L 1.8 1.8 L 0 7 L -1.8 1.8 L -7 0 L -1.8 -1.8 Z" fill="#fffbe0" transform="translate(10,-8)"/>
+    <text id="brilho-ting" x="16" y="-16" font-size="14" font-weight="bold" fill="#ffffff"
+          stroke="#b8892a" stroke-width=".5" opacity="0" font-family="Arial, sans-serif">TING!</text>
   </g>
 
   <!-- 🚜 RETROESCAVADEIRA (aparece na animação do David) -->
@@ -668,6 +705,8 @@
     <circle cx="14" cy="-3" r="7" fill="#26221c"/>
     <circle cx="16" cy="-5" r="1.6" fill="#fff"/>
     <path d="M 17 -10 q 3 -5 7 -5" stroke="#26221c" stroke-width="1.5" fill="none"/>
+    <text id="bzz" x="16" y="-20" font-size="13" font-style="italic" fill="#26221c" opacity="0"
+          font-family="Arial, sans-serif">bzzz!</text>
   </g>
 
   <!-- texto SIX SEVEN -->
@@ -848,16 +887,18 @@ PESSOAS.forEach(p => {
   $('placar').appendChild(chip);
 });
 
-// flores comuns espalhadas (decoração)
+// flores comuns espalhadas (decoração — inclusive rosas iguais à da Duda!)
 const posicoesFlores = [
   [300, 470], [350, 545], [500, 560], [720, 545], [790, 480],
-  [880, 520], [60, 470], [250, 400], [920, 420], [420, 575]
+  [880, 520], [60, 470], [250, 400], [920, 420], [420, 575],
+  [560, 480], [830, 578], [130, 560], [680, 460]
 ];
-const coresFlores = ['#f2f2f2', '#f2c14e', '#c88ae0', '#f2f2f2', '#f2c14e'];
+const coresFlores = ['#f2f2f2', '#e8639a', '#f2c14e', '#c88ae0', '#e8639a', '#f2f2f2', '#e8639a', '#f2c14e'];
 posicoesFlores.forEach(([x, y], i) => {
   const cor = coresFlores[i % coresFlores.length];
+  const escala = cor === '#e8639a' ? 1 : .7; // as rosas falsas têm o mesmo tamanho da verdadeira
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  g.setAttribute('transform', `translate(${x},${y}) scale(.7)`);
+  g.setAttribute('transform', `translate(${x},${y}) scale(${escala})`);
   g.innerHTML = `
     <line x1="0" y1="6" x2="0" y2="26" stroke="#3e7a30" stroke-width="3"/>
     <circle cx="0" cy="-6" r="5" fill="${cor}"/>
@@ -925,6 +966,54 @@ function animate(dur, passo, fim, suave = true) {
   requestAnimationFrame(frame);
 }
 
+// tremor de tela
+function tremer() {
+  const palco = $('palco');
+  palco.classList.remove('treme');
+  void palco.offsetWidth;
+  palco.classList.add('treme');
+}
+
+// partículas voando (terra, poeira...)
+function particulas(px, py, cores, n = 8, forca = 130) {
+  const cena = $('cena'), parts = [];
+  for (let i = 0; i < n; i++) {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('r', 3 + Math.random() * 4);
+    c.setAttribute('fill', cores[i % cores.length]);
+    c.setAttribute('pointer-events', 'none');
+    cena.appendChild(c);
+    const ang = Math.PI * (.2 + .6 * Math.random());
+    parts.push({
+      el: c,
+      vx: Math.cos(ang) * forca * (Math.random() > .5 ? 1 : -1),
+      vy: Math.sin(ang) * forca * (.6 + Math.random() * .8)
+    });
+  }
+  animate(700, (e, t) => {
+    parts.forEach(pp => {
+      pp.el.setAttribute('cx', px + pp.vx * t);
+      pp.el.setAttribute('cy', py - pp.vy * t + 260 * t * t);
+      pp.el.setAttribute('opacity', 1 - t);
+    });
+  }, () => parts.forEach(pp => pp.el.remove()), false);
+}
+
+// notinha musical subindo (dança do 67)
+function nota(x, y) {
+  const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t.textContent = Math.random() > .5 ? '🎵' : '🎶';
+  t.setAttribute('font-size', 20 + Math.random() * 12);
+  t.setAttribute('pointer-events', 'none');
+  $('cena').appendChild(t);
+  const dx = (Math.random() - .5) * 70;
+  animate(1400, (e, tt) => {
+    t.setAttribute('x', x + dx * tt);
+    t.setAttribute('y', y - 100 * tt);
+    t.setAttribute('opacity', 1 - tt);
+  }, () => t.remove(), false);
+}
+
 // ======= ANIMAÇÕES DE CADA UM =======
 
 // 🚜 David: retroescavadeira entra, cava 3x e puxa a foto
@@ -939,6 +1028,8 @@ function animDavid(p, done) {
       animate(320, e => {
         $('retro-braco').setAttribute('transform', `rotate(${Math.sin(e * Math.PI) * 14} 78 24)`);
       }, () => {
+        tremer();
+        particulas(175, 505, ['#8a6238', '#a0764a', '#6e4c28']);
         if (++vezes < 3) cavar();
         else {
           foto.setAttribute('opacity', '1');
@@ -996,11 +1087,13 @@ function animDuda(p, done) {
     abelha.setAttribute('transform', `translate(${x},${y})`);
   }, () => {
     // coletando: balança na flor
+    $('bzz').setAttribute('opacity', '1');
     animate(1000, (e, t) => {
       abelha.setAttribute('transform',
         `translate(${fx + Math.sin(t * 20) * 3},${fy + Math.cos(t * 16) * 3})`);
       flor.setAttribute('transform', `rotate(${Math.sin(t * 24) * 5} 0 20)`);
     }, () => {
+      $('bzz').setAttribute('opacity', '0');
       flor.setAttribute('transform', '');
       $('abelha-foto').setAttribute('opacity', '1');
       animate(1500, e => {
@@ -1017,32 +1110,47 @@ function animDuda(p, done) {
   });
 }
 
-// ✈️ Andressa: avião vem na direção da tela e a foto "explode"
+// ✈️ Andressa: o avião te percebe, faz a curva e mergulha na direção da tela
 function animAndressa(p, done) {
   const aviao = $('spot-andressa');
   aviao.parentNode.appendChild(aviao); // traz para a frente de tudo
-  animate(1300, e => {
-    const s = 1 + e * 7;
-    const x = 430 + (480 - 430) * e;
-    const y = 80 + (300 - 80) * e;
-    aviao.setAttribute('transform', `translate(${x},${y}) rotate(${-6 + 6 * e}) scale(${s})`);
+  // 1) balança as asas: te viu!
+  animate(900, (e, t) => {
+    const x = 430 + 55 * e;
+    const y = 80 + 28 * Math.sin(e * Math.PI);
+    aviao.setAttribute('transform',
+      `translate(${x},${y}) rotate(${-6 + 14 * e + Math.sin(t * 18) * 5}) scale(${1 + .3 * e})`);
   }, () => {
-    $('flash').style.opacity = '1';
-    setTimeout(() => {
-      aviao.setAttribute('transform', 'translate(430,80) rotate(-6)');
-      done();
-      setTimeout(() => { $('flash').style.opacity = '0'; }, 150);
-    }, 180);
-  }, false);
+    // 2) mergulha crescendo e tremendo cada vez mais
+    animate(1400, (e, t) => {
+      const s = 1.3 + e * 10;
+      const jitter = 9 * e;
+      const x = 485 + (Math.random() - .5) * jitter;
+      const y = 108 + (315 - 108) * e + (Math.random() - .5) * jitter;
+      aviao.setAttribute('transform', `translate(${x},${y}) rotate(${8 - 8 * e}) scale(${s})`);
+    }, () => {
+      tremer();
+      $('flash').style.opacity = '1';
+      setTimeout(() => {
+        aviao.setAttribute('transform', 'translate(430,80) rotate(-6)');
+        done();
+        setTimeout(() => { $('flash').style.opacity = '0'; }, 150);
+      }, 200);
+    }, false);
+  });
 }
 
-// ✨ Álvaro: brilho no sorriso dela
+// ✨ Álvaro: brilho no sorriso dela, com "TING!"
 function animAlvaro(p, done) {
   const brilho = $('brilho');
   brilho.setAttribute('opacity', '1');
-  animate(1300, (e, t) => {
-    const s = Math.sin(t * Math.PI) * 1.8;
-    $('brilho-estrela').setAttribute('transform', `rotate(${t * 220}) scale(${s})`);
+  animate(1500, (e, t) => {
+    const s = Math.sin(t * Math.PI) * 2;
+    $('brilho-estrela').setAttribute('transform', `rotate(${t * 260}) scale(${s})`);
+    const rt = (t * 2) % 1; // dois anéis se expandindo
+    $('brilho-anel').setAttribute('r', 4 + rt * 32);
+    $('brilho-anel').setAttribute('opacity', (1 - rt) * .9);
+    $('brilho-ting').setAttribute('opacity', t > .2 && t < .85 ? 1 : 0);
   }, () => {
     brilho.setAttribute('opacity', '0');
     done();
@@ -1091,6 +1199,7 @@ function animLuis(p, done) {
     adv.setAttribute('transform', `translate(${415 + Math.sin(t * 40) * 4},330)`);
   }, () => {
     // 2) cresce, fica verde e rasga o paletó
+    tremer();
     animate(1100, (e, t) => {
       const s = 1 + .35 * e;
       adv.setAttribute('transform', `translate(415,${330 - (s - 1) * 182}) scale(${s})`);
@@ -1104,7 +1213,9 @@ function animLuis(p, done) {
         `translate(${90 * k},${-40 * k}) rotate(${65 * k} 16 60)`);
       $('paleto-dir').setAttribute('opacity', 1 - k);
     }, () => {
-      // 3) rugido
+      // 3) rugido, poeira e chão tremendo
+      tremer();
+      particulas(415, 508, ['#9aa3b0', '#c8cdd4', '#7e8794'], 10, 100);
       $('texto-hulk').setAttribute('opacity', '1');
       animate(700, (e, t) => {
         $('texto-hulk').setAttribute('transform',
@@ -1132,9 +1243,11 @@ function animSammya(p, done) {
     const passo = Math.sin(t * 26) * 6;
     boy.setAttribute('transform', `translate(${x},${y - Math.abs(passo)}) scale(${s}) rotate(${passo * .6})`);
   }, () => {
-    // dança 67: braços de balança + pulinho
+    // dança 67: braços de balança + pulinho + notas musicais
     boy.setAttribute('transform', 'translate(480,560) scale(1.7)');
     texto.setAttribute('opacity', '1');
+    const notas = setInterval(() => nota(400 + Math.random() * 160, 420), 320);
+    setTimeout(() => clearInterval(notas), 2400);
     animate(2600, (e, t) => {
       const ph = t * Math.PI * 2 * 3.2;
       const sobe = Math.sin(ph);
